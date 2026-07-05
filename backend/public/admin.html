@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>True Match — Admin</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; margin: 0; background: #0f0f12; color: #eee; }
+      header { padding: 16px 20px; background: #17171c; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #26262e; }
+      header h1 { font-size: 18px; margin: 0; }
+      .tabs { display: flex; gap: 8px; }
+      .tabs button { background: #26262e; color: #ccc; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+      .tabs button.active { background: #6d5efc; color: #fff; }
+      main { padding: 20px; max-width: 1000px; margin: 0 auto; }
+      .login { max-width: 320px; margin: 80px auto; text-align: center; }
+      input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #1c1c22; color: #fff; margin: 8px 0; }
+      button.primary { background: #6d5efc; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+      .card { background: #17171c; border: 1px solid #26262e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      .photos { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+      .photos img { width: 90px; height: 120px; object-fit: cover; border-radius: 8px; background: #26262e; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .meta { color: #9a9aa5; font-size: 14px; }
+      .actions { margin-top: 12px; display: flex; gap: 8px; }
+      .btn-approve { background: #2ecc71; }
+      .btn-reject, .btn-ban { background: #e74c3c; }
+      .btn-dismiss { background: #555; }
+      .actions button { color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+      .empty { color: #777; padding: 40px; text-align: center; }
+      .tag { background: #26262e; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="login" class="login">
+      <h1>True Match Admin</h1>
+      <input id="password" type="password" placeholder="Admin password" />
+      <button class="primary" onclick="login()">Enter</button>
+      <p id="loginError" style="color:#e74c3c"></p>
+    </div>
+
+    <div id="app" style="display:none">
+      <header>
+        <h1>True Match Admin</h1>
+        <div class="tabs">
+          <button id="tab-pending" class="active" onclick="showTab('pending')">Pending profiles</button>
+          <button id="tab-reports" onclick="showTab('reports')">Reports</button>
+        </div>
+        <div style="margin-left:auto"><button class="primary" onclick="logout()">Logout</button></div>
+      </header>
+      <main>
+        <div id="pending"></div>
+        <div id="reports" style="display:none"></div>
+      </main>
+    </div>
+
+    <script>
+      const API = ""; // same origin
+      let pw = localStorage.getItem("tm_admin_pw") || "";
+
+      function headers() {
+        return { "Authorization": "Bearer " + pw, "Content-Type": "application/json" };
+      }
+
+      async function api(path, opts = {}) {
+        const res = await fetch(API + path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+        if (res.status === 401) { logout(); throw new Error("unauthorized"); }
+        return res.json();
+      }
+
+      function login() {
+        pw = document.getElementById("password").value;
+        localStorage.setItem("tm_admin_pw", pw);
+        api("/api/admin/pending").then(() => { init(); }).catch(() => {
+          document.getElementById("loginError").textContent = "Wrong password";
+        });
+      }
+
+      function logout() {
+        localStorage.removeItem("tm_admin_pw"); pw = "";
+        document.getElementById("app").style.display = "none";
+        document.getElementById("login").style.display = "block";
+      }
+
+      function showTab(tab) {
+        document.getElementById("pending").style.display = tab === "pending" ? "block" : "none";
+        document.getElementById("reports").style.display = tab === "reports" ? "block" : "none";
+        document.getElementById("tab-pending").classList.toggle("active", tab === "pending");
+        document.getElementById("tab-reports").classList.toggle("active", tab === "reports");
+        if (tab === "pending") loadPending(); else loadReports();
+      }
+
+      async function loadPending() {
+        const el = document.getElementById("pending");
+        el.innerHTML = "Loading...";
+        const { profiles } = await api("/api/admin/pending");
+        if (!profiles.length) { el.innerHTML = '<div class="empty">No pending profiles 🎉</div>'; return; }
+        el.innerHTML = profiles.map(p => `
+          <div class="card">
+            <div class="row"><strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span></div>
+            <div class="photos">${p.photos.map(u => `<img src="${u}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="actions">
+              <button class="btn-approve" onclick="approve('${p.userId}')">Approve</button>
+              <button class="btn-reject" onclick="reject('${p.userId}')">Reject</button>
+            </div>
+          </div>`).join("");
+      }
+
+      async function approve(userId) {
+        await api(`/api/admin/profiles/${userId}/approve`, { method: "POST", body: "{}" });
+        loadPending();
+      }
+      async function reject(userId) {
+        const reason = prompt("Rejection reason (optional):") || "";
+        await api(`/api/admin/profiles/${userId}/reject`, { method: "POST", body: JSON.stringify({ reason }) });
+        loadPending();
+      }
+
+      async function loadReports() {
+        const el = document.getElementById("reports");
+        el.innerHTML = "Loading...";
+        const { reports } = await api("/api/admin/reports");
+        if (!reports.length) { el.innerHTML = '<div class="empty">No open reports 🎉</div>'; return; }
+        el.innerHTML = reports.map(r => `
+          <div class="card">
+            <div class="row"><strong>${escapeHtml(r.reportedUser.name || "(no profile)")}</strong> <span class="tag">${escapeHtml(r.reason)}</span> ${r.reportedUser.isBanned ? '<span class="tag" style="background:#e74c3c">BANNED</span>' : ""}</div>
+            ${r.note ? `<div class="meta">Note: ${escapeHtml(r.note)}</div>` : ""}
+            <div class="photos">${r.reportedUser.photos.map(u => `<img src="${u}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="actions">
+              <button class="btn-ban" onclick="ban('${r.reportedUser.userId}')">Ban user</button>
+              <button class="btn-dismiss" onclick="dismiss('${r.id}')">Dismiss</button>
+            </div>
+          </div>`).join("");
+      }
+
+      async function ban(userId) {
+        if (!confirm("Ban this user?")) return;
+        await api(`/api/admin/users/${userId}/ban`, { method: "POST", body: "{}" });
+        loadReports();
+      }
+      async function dismiss(id) {
+        await api(`/api/admin/reports/${id}/dismiss`, { method: "POST", body: "{}" });
+        loadReports();
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+
+      function init() {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        loadPending();
+      }
+
+      if (pw) { api("/api/admin/pending").then(init).catch(logout); }
+    </script>
+  </body>
+</html>

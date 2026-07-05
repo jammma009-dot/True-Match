@@ -1,0 +1,191 @@
+// True Match — Prisma schema
+// Postgres via Railway. Simple, MVP-focused model.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Language {
+  uz
+  ru
+}
+
+enum Gender {
+  male
+  female
+}
+
+// Who the user wants to meet (their interest / intent)
+enum Intent {
+  serious // Jiddiy munosabatlar
+  marriage // Nikoh va oila
+  flirt // Flirt va uchrashuvlar
+  friendship // Muloqot va do'stlik
+  unsure // Hali aniqlanmaganman
+}
+
+enum ProfileStatus {
+  pending
+  approved
+  rejected
+}
+
+// Uzbekistan cities. Stored as enum for MVP; easy to extend later
+// or migrate to a lookup table with regions.
+enum City {
+  toshkent
+  nukus
+  andijon
+  buxoro
+  jizzax
+  qarshi
+  navoiy
+  namangan
+  samarqand
+  termiz
+  guliston
+  nurafshon
+  fargona
+  urganch
+}
+
+enum SwipeAction {
+  like
+  pass
+}
+
+// ---------- Models ----------
+
+model User {
+  id         String   @id @default(cuid())
+  telegramId BigInt   @unique
+  language   Language @default(uz)
+  isBanned   Boolean  @default(false)
+  // Whether the user currently has the Mini App open (for chat notification routing)
+  isOnline   Boolean  @default(false)
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profile         Profile?
+  swipesGiven     Swipe[]   @relation("SwipeFrom")
+  swipesReceived  Swipe[]   @relation("SwipeTo")
+  matchesA        Match[]   @relation("MatchUserA")
+  matchesB        Match[]   @relation("MatchUserB")
+  messagesSent    Message[] @relation("MessageSender")
+  reportsMade     Report[]  @relation("Reporter")
+  reportsAgainst  Report[]  @relation("Reported")
+  blocksMade      Block[]   @relation("Blocker")
+  blocksAgainst   Block[]   @relation("Blocked")
+}
+
+model Profile {
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  birthdate DateTime // Full date stored; only age exposed to other users
+  gender    Gender
+  intent    Intent
+  city      City          @default(toshkent)
+  status    ProfileStatus @default(pending)
+  // Reason shown to the user if rejected (optional)
+  rejectionReason String?
+  // Locks gender edits once approved
+  genderLocked Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos Photo[]
+
+  @@index([status, city, gender])
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  // Object key in the R2 bucket
+  key       String
+  // Public URL (built from R2 public base + key)
+  url       String
+  position  Int      @default(0)
+  // TODO: automated photo moderation would set an approval flag here later
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
+}
+
+model Swipe {
+  id         String      @id @default(cuid())
+  fromUserId String
+  fromUser   User        @relation("SwipeFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User        @relation("SwipeTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  action     SwipeAction
+  createdAt  DateTime    @default(now())
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, action])
+}
+
+model Match {
+  id        String    @id @default(cuid())
+  // userAId < userBId lexicographically to keep pairs unique & unordered
+  userAId   String
+  userA     User      @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     User      @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([matchId, createdAt])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String
+  reportedUser   User     @relation("Reported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reason         String
+  note           String?
+  resolved       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([resolved])
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  blockerId   String
+  blocker     User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId   String
+  blocked     User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}

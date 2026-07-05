@@ -1,0 +1,99 @@
+{
+  "app.name": "True Match",
+  "common.continue": "Davom etish",
+  "common.back": "Orqaga",
+  "common.save": "Saqlash",
+  "common.cancel": "Bekor qilish",
+  "common.submit": "Yuborish",
+  "common.loading": "Yuklanmoqda...",
+  "common.error": "Xatolik yuz berdi",
+  "common.retry": "Qayta urinish",
+  "common.search": "Qidirish",
+  "common.send": "Yuborish",
+
+  "loading.app": "True Match yuklanmoqda...",
+  "error.notInTelegram": "Bu ilova Telegram ichida ochilishi kerak.",
+  "error.auth": "Kirishda xatolik. Iltimos, qayta urinib ko'ring.",
+
+  "onboarding.name.title": "Ismingiz nima?",
+  "onboarding.name.helper": "Bu ism profilingizda boshqalarga ko'rinadi.",
+  "onboarding.name.placeholder": "Ismingiz",
+
+  "onboarding.birthdate.title": "Qachon tug'ilgansiz?",
+  "onboarding.birthdate.helper": "Profilda faqat yoshingiz ko'rsatiladi, sana emas.",
+  "onboarding.birthdate.day": "Kun",
+  "onboarding.birthdate.month": "Oy",
+  "onboarding.birthdate.year": "Yil",
+  "onboarding.birthdate.select": "Tug'ilgan sanani tanlang",
+  "onboarding.birthdate.underage": "Ro'yxatdan o'tish uchun kamida 18 yoshda bo'lishingiz kerak.",
+
+  "onboarding.gender.title": "Jinsingiz",
+  "onboarding.gender.male": "Erkak",
+  "onboarding.gender.female": "Ayol",
+  "onboarding.gender.warning": "Diqqat: profil tasdiqlangandan so'ng jinsni o'zgartirib bo'lmaydi.",
+
+  "onboarding.intent.title": "Nimani qidiryapsiz?",
+  "intent.serious": "Jiddiy munosabatlar",
+  "intent.marriage": "Nikoh va oila",
+  "intent.flirt": "Flirt va uchrashuvlar",
+  "intent.friendship": "Muloqot va do'stlik",
+  "intent.unsure": "Hali aniqlanmaganman",
+
+  "onboarding.city.title": "Shahringiz",
+  "onboarding.city.helper": "Yashash shahringizni tanlang.",
+  "onboarding.city.searchPlaceholder": "Shaharni qidiring...",
+
+  "onboarding.photos.title": "Rasmlaringiz",
+  "onboarding.photos.helper": "Rasmlar moderatsiyadan o'tadi va yuzingiz aniq ko'rinishi kerak (memlar yoki yuzsiz rasmlar mumkin emas).",
+  "onboarding.photos.counter": "{count}/6",
+  "onboarding.photos.needOne": "Kamida 1 ta rasm qo'shing.",
+  "onboarding.photos.uploading": "Yuklanmoqda...",
+
+  "pending.title": "Anketa tekshiruvda",
+  "pending.body": "Moderatorlar profilingizni ko'rib chiqmoqda. Bu odatda tez amalga oshadi. Tasdiqlangach, lenta ochiladi.",
+
+  "rejected.title": "Anketa tasdiqlanmadi",
+  "rejected.body": "Afsuski, profilingiz tasdiqlanmadi.",
+  "rejected.reason": "Sabab:",
+  "rejected.retry": "Anketani qayta to'ldirish",
+
+  "nav.discover": "Profillar",
+  "nav.likes": "Layklar",
+  "nav.chats": "Chatlar",
+  "nav.profile": "Profil",
+
+  "discover.empty": "Hozircha yangi profillar yo'q. Keyinroq qaytib keling!",
+  "discover.locked": "Profilingiz tasdiqlangach bu bo'lim ochiladi.",
+  "discover.newMatch": "Yangi moslik! 🎉",
+  "discover.gift": "Sovg'a (tez orada)",
+
+  "matches.title": "Suhbatlar",
+  "matches.empty": "Hozircha mosliklar yo'q. Yoqtirganlaringizni belgilashda davom eting!",
+  "matches.newMatchLabel": "Yangi moslik",
+
+  "chat.placeholder": "Xabar yozing...",
+  "chat.report": "Shikoyat qilish",
+  "chat.block": "Bloklash",
+  "chat.blocked": "Bu foydalanuvchi bloklangan.",
+
+  "likes.title": "Layklar",
+  "likes.comingSoon": "Sizni yoqtirganlar tez orada shu yerda ko'rinadi.",
+
+  "profile.title": "Mening profilim",
+  "profile.status.pending": "Tekshiruvda",
+  "profile.status.approved": "Tasdiqlangan",
+  "profile.status.rejected": "Rad etilgan",
+  "profile.language": "Til",
+  "profile.editComingSoon": "Profilni tahrirlash tez orada qo'shiladi.",
+
+  "report.title": "Shikoyat qilish",
+  "report.reasonLabel": "Sabab",
+  "report.reason.fake": "Soxta profil",
+  "report.reason.offensive": "Haqoratli xatti-harakat",
+  "report.reason.spam": "Spam yoki reklama",
+  "report.reason.other": "Boshqa",
+  "report.noteLabel": "Izoh (ixtiyoriy)",
+  "report.success": "Shikoyatingiz yuborildi.",
+  "block.confirm": "Ushbu foydalanuvchini bloklaysizmi?",
+  "block.success": "Foydalanuvchi bloklandi."
+}

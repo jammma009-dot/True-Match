@@ -1,0 +1,99 @@
+{
+  "app.name": "True Match",
+  "common.continue": "Продолжить",
+  "common.back": "Назад",
+  "common.save": "Сохранить",
+  "common.cancel": "Отмена",
+  "common.submit": "Отправить",
+  "common.loading": "Загрузка...",
+  "common.error": "Произошла ошибка",
+  "common.retry": "Повторить",
+  "common.search": "Поиск",
+  "common.send": "Отправить",
+
+  "loading.app": "Загрузка True Match...",
+  "error.notInTelegram": "Это приложение нужно открывать внутри Telegram.",
+  "error.auth": "Ошибка входа. Пожалуйста, попробуйте снова.",
+
+  "onboarding.name.title": "Как вас зовут?",
+  "onboarding.name.helper": "Это имя будут видеть другие в вашем профиле.",
+  "onboarding.name.placeholder": "Ваше имя",
+
+  "onboarding.birthdate.title": "Когда вы родились?",
+  "onboarding.birthdate.helper": "В профиле показывается только возраст, а не дата.",
+  "onboarding.birthdate.day": "День",
+  "onboarding.birthdate.month": "Месяц",
+  "onboarding.birthdate.year": "Год",
+  "onboarding.birthdate.select": "Выберите дату рождения",
+  "onboarding.birthdate.underage": "Для регистрации вам должно быть не менее 18 лет.",
+
+  "onboarding.gender.title": "Ваш пол",
+  "onboarding.gender.male": "Мужчина",
+  "onboarding.gender.female": "Женщина",
+  "onboarding.gender.warning": "Внимание: пол нельзя изменить после одобрения профиля.",
+
+  "onboarding.intent.title": "Что вы ищете?",
+  "intent.serious": "Серьёзные отношения",
+  "intent.marriage": "Брак и семья",
+  "intent.flirt": "Флирт и свидания",
+  "intent.friendship": "Общение и дружба",
+  "intent.unsure": "Пока не определился(лась)",
+
+  "onboarding.city.title": "Ваш город",
+  "onboarding.city.helper": "Выберите город проживания.",
+  "onboarding.city.searchPlaceholder": "Найти город...",
+
+  "onboarding.photos.title": "Ваши фото",
+  "onboarding.photos.helper": "Фото проходят модерацию, и на них должно быть чётко видно ваше лицо (без мемов и фото без лица).",
+  "onboarding.photos.counter": "{count}/6",
+  "onboarding.photos.needOne": "Добавьте хотя бы 1 фото.",
+  "onboarding.photos.uploading": "Загрузка...",
+
+  "pending.title": "Анкета на проверке",
+  "pending.body": "Модераторы проверяют ваш профиль. Обычно это быстро. Как только одобрят, лента откроется.",
+
+  "rejected.title": "Анкета отклонена",
+  "rejected.body": "К сожалению, ваш профиль не был одобрен.",
+  "rejected.reason": "Причина:",
+  "rejected.retry": "Заполнить анкету заново",
+
+  "nav.discover": "Профили",
+  "nav.likes": "Лайки",
+  "nav.chats": "Чаты",
+  "nav.profile": "Профиль",
+
+  "discover.empty": "Пока новых профилей нет. Загляните позже!",
+  "discover.locked": "Этот раздел откроется после одобрения профиля.",
+  "discover.newMatch": "Новое совпадение! 🎉",
+  "discover.gift": "Подарок (скоро)",
+
+  "matches.title": "Чаты",
+  "matches.empty": "Пока совпадений нет. Продолжайте ставить лайки!",
+  "matches.newMatchLabel": "Новое совпадение",
+
+  "chat.placeholder": "Напишите сообщение...",
+  "chat.report": "Пожаловаться",
+  "chat.block": "Заблокировать",
+  "chat.blocked": "Этот пользователь заблокирован.",
+
+  "likes.title": "Лайки",
+  "likes.comingSoon": "Те, кто вас лайкнул, скоро появятся здесь.",
+
+  "profile.title": "Мой профиль",
+  "profile.status.pending": "На проверке",
+  "profile.status.approved": "Одобрен",
+  "profile.status.rejected": "Отклонён",
+  "profile.language": "Язык",
+  "profile.editComingSoon": "Редактирование профиля скоро появится.",
+
+  "report.title": "Пожаловаться",
+  "report.reasonLabel": "Причина",
+  "report.reason.fake": "Фейковый профиль",
+  "report.reason.offensive": "Оскорбительное поведение",
+  "report.reason.spam": "Спам или реклама",
+  "report.reason.other": "Другое",
+  "report.noteLabel": "Комментарий (необязательно)",
+  "report.success": "Ваша жалоба отправлена.",
+  "block.confirm": "Заблокировать этого пользователя?",
+  "block.success": "Пользователь заблокирован."
+}

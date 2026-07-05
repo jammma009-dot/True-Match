@@ -1,0 +1,153 @@
+import { Router, Request, Response } from "express";
+import { z } from "zod";
+import { prisma } from "../lib/prisma";
+import { requireAuth } from "../middleware/auth";
+import { validateBody } from "../middleware/validate";
+import { computeAge } from "../utils/age";
+import { cityLabel } from "../utils/cities";
+import { createMessage } from "../services/messages";
+import { notifyNewMessage } from "../bot/notify";
+import { emitToUser } from "../socket";
+
+const router = Router();
+
+/**
+ * GET /api/matches
+ * List the current user's matches with the other person's basic profile and
+ * a preview of the last message.
+ */
+router.get("/", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+
+  const matches = await prisma.match.findMany({
+    where: { OR: [{ userAId: user.id }, { userBId: user.id }] },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const result = await Promise.all(
+    matches.map(async (m) => {
+      const otherId = m.userAId === user.id ? m.userBId : m.userAId;
+      const other = await prisma.user.findUnique({
+        where: { id: otherId },
+        include: { profile: { include: { photos: true } } },
+      });
+      const lastMessage = await prisma.message.findFirst({
+        where: { matchId: m.id },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const profile = other?.profile;
+      const firstPhoto = profile?.photos.sort(
+        (a, b) => a.position - b.position,
+      )[0];
+
+      return {
+        matchId: m.id,
+        createdAt: m.createdAt.toISOString(),
+        user: profile
+          ? {
+              userId: otherId,
+              name: profile.name,
+              age: computeAge(profile.birthdate),
+              city: profile.city,
+              cityLabel: cityLabel(profile.city),
+              photo: firstPhoto?.url ?? null,
+            }
+          : null,
+        lastMessage: lastMessage
+          ? {
+              body: lastMessage.body,
+              senderId: lastMessage.senderId,
+              createdAt: lastMessage.createdAt.toISOString(),
+            }
+          : null,
+      };
+    }),
+  );
+
+  res.json({ matches: result });
+});
+
+/** Verify the current user belongs to the match; returns match or null. */
+async function getMemberMatch(matchId: string, userId: string) {
+  const match = await prisma.match.findUnique({ where: { id: matchId } });
+  if (!match) return null;
+  if (match.userAId !== userId && match.userBId !== userId) return null;
+  return match;
+}
+
+/**
+ * GET /api/matches/:matchId/messages — chat history (oldest first).
+ */
+router.get(
+  "/:matchId/messages",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const user = req.authUser!;
+    const match = await getMemberMatch(req.params.matchId, user.id);
+    if (!match) {
+      res.status(404).json({ error: "match_not_found" });
+      return;
+    }
+
+    const messages = await prisma.message.findMany({
+      where: { matchId: match.id },
+      orderBy: { createdAt: "asc" },
+      take: 200,
+    });
+
+    // Mark received messages as read.
+    await prisma.message.updateMany({
+      where: { matchId: match.id, senderId: { not: user.id }, readAt: null },
+      data: { readAt: new Date() },
+    });
+
+    res.json({
+      messages: messages.map((m) => ({
+        id: m.id,
+        matchId: m.matchId,
+        senderId: m.senderId,
+        body: m.body,
+        createdAt: m.createdAt.toISOString(),
+      })),
+    });
+  },
+);
+
+/**
+ * POST /api/matches/:matchId/messages — REST fallback for sending a message.
+ * (Real-time delivery normally happens over Socket.io, but this endpoint keeps
+ * the API usable/testable without a socket connection.)
+ */
+const sendSchema = z.object({ body: z.string().min(1).max(2000) });
+router.post(
+  "/:matchId/messages",
+  requireAuth,
+  validateBody(sendSchema),
+  async (req: Request, res: Response) => {
+    const user = req.authUser!;
+    const { body } = req.body as z.infer<typeof sendSchema>;
+
+    const result = await createMessage(req.params.matchId, user.id, body);
+    if (!result.ok || !result.message) {
+      res.status(400).json({ error: result.error ?? "send_failed" });
+      return;
+    }
+
+    // Real-time push to the recipient if connected.
+    emitToUser(result.recipientId!, "message:new", result.message);
+
+    // Offline notification via bot if the recipient isn't active in the app.
+    const recipient = await prisma.user.findUnique({
+      where: { id: result.recipientId! },
+      select: { isOnline: true },
+    });
+    if (!recipient?.isOnline) {
+      void notifyNewMessage(result.recipientId!);
+    }
+
+    res.status(201).json({ message: result.message });
+  },
+);
+
+export default router;

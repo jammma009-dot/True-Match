@@ -1,0 +1,21 @@
+{
+  "app.name": "True Match",
+  "bot.chooseLanguage": "Iltimos, tilni tanlang / Пожалуйста, выберите язык",
+  "bot.lang.uz": "🇺🇿 O'zbek tili",
+  "bot.lang.ru": "🇷🇺 Русский",
+  "bot.langSaved": "Язык выбран ✅",
+  "bot.welcome.caption": "🖤 *True Match*\n\nБыстрые и удобные знакомства прямо в Telegram. Новые совпадения и люди, которые вам подходят — уже здесь.\n\n👇 Нажмите кнопку ниже, чтобы открыть приложение.",
+  "bot.welcome.openButton": "🖤 Открыть True Match",
+  "bot.newMatch.title": "🎉 У вас новое совпадение!",
+  "bot.newMatch.body": "Кто-то совпал с вами. Откройте приложение, чтобы начать общение.",
+  "bot.newMatch.openButton": "💬 Открыть чат",
+  "bot.newMessage.title": "💌 Новое сообщение",
+  "bot.newMessage.body": "Вам пришло новое сообщение. Откройте приложение, чтобы прочитать.",
+  "bot.newMessage.openButton": "💬 Открыть сообщение",
+  "bot.banned": "Ваш аккаунт заблокирован.",
+  "bot.approved.title": "✅ Ваша анкета одобрена!",
+  "bot.approved.body": "Поздравляем! Теперь вы можете смотреть людей и общаться.",
+  "bot.approved.openButton": "🔥 Начать",
+  "bot.rejected.title": "❌ Анкета отклонена",
+  "bot.rejected.body": "К сожалению, ваша анкета не прошла проверку. Пожалуйста, попробуйте снова в приложении."
+}
