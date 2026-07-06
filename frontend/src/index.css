@@ -46,6 +46,32 @@ img {
   user-select: none;
 }
 
+/* Swipe action buttons: a soft permanent glow + a gentle pulse every 4s. */
+@keyframes likeGlow {
+  0%,
+  100% {
+    box-shadow: 0 8px 22px rgba(255, 46, 154, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 26px 7px rgba(255, 46, 154, 0.65), 0 8px 22px rgba(255, 46, 154, 0.5);
+  }
+}
+@keyframes passGlow {
+  0%,
+  100% {
+    box-shadow: 0 8px 22px rgba(255, 255, 255, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 24px 6px rgba(255, 255, 255, 0.4), 0 8px 22px rgba(255, 255, 255, 0.2);
+  }
+}
+.glow-like {
+  animation: likeGlow 4s ease-in-out infinite;
+}
+.glow-pass {
+  animation: passGlow 4s ease-in-out infinite;
+}
+
 /* Hide scrollbars for a cleaner mini-app feel */
 ::-webkit-scrollbar {
   width: 0;

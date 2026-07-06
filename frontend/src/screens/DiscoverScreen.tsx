@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MessageCircle, MoreVertical, Flame } from "lucide-react";
+import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MessageCircle, MoreVertical } from "lucide-react";
 import { api, PublicProfile, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { haptics } from "../lib/telegram";
@@ -48,9 +48,15 @@ export function DiscoverScreen({
     setPhotoIdx(0);
   }, [feedTab]);
 
-  // "Nearby" narrows the feed to the user's own city.
+  // "Nearby" shows same-city people first, then automatically continues with
+  // people from other cities once the local ones run out.
   const visibleQueue =
-    feedTab === "nearby" && myCity ? queue.filter((p) => p.city === myCity) : queue;
+    feedTab === "nearby" && myCity
+      ? [
+          ...queue.filter((p) => p.city === myCity),
+          ...queue.filter((p) => p.city !== myCity),
+        ]
+      : queue;
   const current = visibleQueue[index];
 
   const advance = () => {
@@ -226,9 +232,6 @@ export function DiscoverScreen({
 
         {/* Top bar: brand + FOR YOU / NEARBY toggle + more */}
         <div className="absolute inset-x-3 top-3 z-30 flex items-center gap-2">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/50 text-brand backdrop-blur">
-            <Flame className="h-5 w-5" fill="currentColor" />
-          </div>
           <div className="flex flex-1 items-center rounded-full bg-black/40 p-1 backdrop-blur">
             {(["foryou", "nearby"] as const).map((tab) => (
               <button
@@ -285,23 +288,15 @@ export function DiscoverScreen({
             <Heart className="h-3.5 w-3.5" fill="currentColor" />
             {t(`intent.${current.intent}`)}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-end gap-2">
             <h2 className="text-4xl font-extrabold leading-none text-white">{current.name}</h2>
             <span className="text-3xl font-light text-white/90">{current.age}</span>
-            <button
-              type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => triggerSwipe("like")}
-              className="pointer-events-auto ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur active:bg-white/20"
-            >
-              <Heart className="h-5 w-5" />
-            </button>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
+            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
               <MapPin className="h-3.5 w-3.5" /> {current.cityLabel}
             </span>
-            <span className="rounded-full bg-white/12 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
+            <span className="rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
               {current.gender === "male"
                 ? t("onboarding.gender.male")
                 : t("onboarding.gender.female")}
@@ -317,7 +312,7 @@ export function DiscoverScreen({
           aria-label="pass"
           onClick={() => triggerSwipe("pass")}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-white text-black shadow-xl shadow-black/40 transition-transform active:scale-95"
+          className="glow-pass flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95"
         >
           <HeartCrack className="h-7 w-7" strokeWidth={2.5} />
         </button>
@@ -337,7 +332,7 @@ export function DiscoverScreen({
           aria-label="like"
           onClick={() => triggerSwipe("like")}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-brand text-black shadow-xl shadow-brand/40 transition-transform active:scale-95"
+          className="glow-like flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-brand text-black transition-transform active:scale-95"
         >
           <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
         </button>
