@@ -6,6 +6,7 @@ import { Spinner } from "../components/ui";
 import { haptics } from "../lib/telegram";
 import { LogoHeader } from "../components/LogoHeader";
 import { PremiumBadge } from "../components/PremiumBadge";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 
 export function MatchesScreen({
   onOpenChat,
@@ -67,6 +68,7 @@ export function MatchesScreen({
                   </span>
                   {m.user && <span className="text-sm text-tg-hint">{m.user.age}</span>}
                   {m.user?.isPremium && <PremiumBadge />}
+                  {m.user?.verified && <VerifiedBadge />}
                 </div>
                 <p className={`truncate text-sm ${m.lastMessage ? "text-tg-hint" : "font-medium text-brand"}`}>
                   {m.lastMessage ? m.lastMessage.body : t("matches.newMatchLabel")}

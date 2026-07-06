@@ -27,5 +27,7 @@
   "bot.boost.body": "Rahmat! 3 kun davomida siz lentaning tepasida ko'rinasiz.",
   "bot.present.sent": "Sovg'angiz yuborildi! U 3 kun davomida lentaning tepasida ko'rinadi.",
   "bot.present.title": "🎁 Sizga sovg'a!",
-  "bot.present.body": "Kimdir sizga sovg'a yubordi — 3 kun davomida lentaning tepasida ko'rinasiz!"
+  "bot.present.body": "Kimdir sizga sovg'a yubordi — 3 kun davomida lentaning tepasida ko'rinasiz!",
+  "bot.verified.title": "✅ Profilingiz tasdiqlandi!",
+  "bot.verified.body": "Tabriklaymiz! Endi ismingiz yonida ko'k tasdiq belgisi bor."
 }

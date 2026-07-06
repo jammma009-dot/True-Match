@@ -178,6 +178,39 @@ router.patch(
 );
 
 /**
+ * POST /api/profile/verification { key, url }
+ * Submit a verification selfie (holding two fingers) for admin review. Sets
+ * verificationStatus to `pending`. The user can keep using the app meanwhile.
+ */
+const verifySchema = z.object({
+  key: z.string().min(1),
+  url: z.string().url(),
+});
+router.post(
+  "/verification",
+  requireAuth,
+  validateBody(verifySchema),
+  async (req: Request, res: Response) => {
+    const user = req.authUser!;
+    const { key, url } = req.body as z.infer<typeof verifySchema>;
+    const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
+    if (!profile) {
+      res.status(404).json({ error: "profile_not_found" });
+      return;
+    }
+    await prisma.profile.update({
+      where: { userId: user.id },
+      data: {
+        verificationStatus: "pending",
+        verificationKey: key,
+        verificationPhotoUrl: url,
+      },
+    });
+    res.json({ ok: true });
+  },
+);
+
+/**
  * DELETE /api/profile
  * Delete the current user's account entirely (profile, photos, swipes, matches,
  * messages, reports, blocks all cascade). Reopening the app starts fresh.

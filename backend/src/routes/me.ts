@@ -63,6 +63,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       premiumUntil: user.premiumUntil ? user.premiumUntil.toISOString() : null,
       isBoosted: isBoostActive(user.boostUntil),
       boostUntil: user.boostUntil ? user.boostUntil.toISOString() : null,
+      freeBoostClaimed: user.freeBoostClaimed,
     },
     profile: profile ? toOwnProfile(profile, profile.photos) : null,
     stats: { views, likes, matches, days },

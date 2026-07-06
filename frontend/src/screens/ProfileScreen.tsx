@@ -9,6 +9,7 @@ import { EditProfileScreen } from "./EditProfileScreen";
 import { PremiumModal } from "../components/PremiumModal";
 import { PresentModal } from "../components/PresentModal";
 import { PremiumBadge } from "../components/PremiumBadge";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 import { Gift } from "lucide-react";
 import type { OwnProfile } from "../store/useStore";
 
@@ -81,6 +82,7 @@ export function ProfileScreen() {
             {profile ? `, ${profile.age}` : ""}
           </span>
           {isPremium && <PremiumBadge variant="label" />}
+          {profile?.verified && <VerifiedBadge />}
         </h1>
         {profile && (
           <p className="mt-0.5 flex items-center gap-1 text-sm text-tg-hint">

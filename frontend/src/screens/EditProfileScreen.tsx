@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Ruler, GraduationCap, Briefcase } from "lucide-react";
+import { ChevronLeft, Ruler, GraduationCap, Briefcase, ShieldCheck, Gift, ChevronRight } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { INTEREST_ICON, INTENT_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { showBackButton, hideBackButton, haptics } from "../lib/telegram";
 import { CitySelect } from "./onboarding/CitySelect";
 import { PhotoGrid, UploadedPhoto } from "./onboarding/PhotoGrid";
+import { VerifiedBadge } from "../components/VerifiedBadge";
+import { VerificationModal } from "../components/VerificationModal";
+import { FreeBoostModal } from "../components/FreeBoostModal";
 
 const MAX_INTERESTS = 10;
 
@@ -34,12 +37,17 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
       .filter((p) => p.key)
       .map((p) => ({ key: p.key as string, url: p.url })),
   );
-  const [studyOn, setStudyOn] = useState<boolean>(!!profile?.education);
+  const [studyOn, setStudyOn] = useState<boolean>(!!profile?.studies);
   const [studyText, setStudyText] = useState(profile?.education ?? "");
-  const [workOn, setWorkOn] = useState<boolean>(!!profile?.work);
+  const [workOn, setWorkOn] = useState<boolean>(!!profile?.works);
   const [workText, setWorkText] = useState(profile?.work ?? "");
   const [saving, setSaving] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [showVerify, setShowVerify] = useState(false);
+  const [showFreeBoost, setShowFreeBoost] = useState(false);
+
+  const verificationStatus = profile?.verificationStatus ?? "none";
+  const freeBoostClaimed = me?.user.freeBoostClaimed ?? false;
 
   useEffect(() => {
     showBackButton(onClose);
@@ -126,6 +134,48 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
             <p className="mt-2 text-sm text-pass">{t("edit.photosRequired")}</p>
           )}
         </Field>
+
+        {/* Verification */}
+        <Field label={t("verify.sectionLabel")}>
+          {verificationStatus === "verified" ? (
+            <div className="flex items-center gap-2 rounded-xl bg-sky-500/15 px-4 py-3 text-sm font-semibold text-sky-300">
+              <VerifiedBadge /> {t("verify.statusVerified")}
+            </div>
+          ) : verificationStatus === "pending" ? (
+            <div className="rounded-xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-sm text-tg-hint">
+              {t("verify.statusPending")}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                haptics.impact("light");
+                setShowVerify(true);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl bg-sky-500/15 px-4 py-3 text-left text-sky-300 active:opacity-80"
+            >
+              <ShieldCheck className="h-5 w-5" />
+              <span className="flex-1 font-semibold">{t("verify.cta")}</span>
+              <ChevronRight className="h-5 w-5 opacity-70" />
+            </button>
+          )}
+        </Field>
+
+        {/* Free boost */}
+        <button
+          type="button"
+          onClick={() => {
+            haptics.impact("light");
+            setShowFreeBoost(true);
+          }}
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-r from-pink-500/20 to-brand/20 px-4 py-3 text-left active:opacity-80"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/30 text-white">
+            <Gift className="h-4 w-4" />
+          </span>
+          <span className="flex-1 font-semibold text-tg">{t("freeBoost.cta")}</span>
+          <ChevronRight className="h-5 w-5 text-tg-hint" />
+        </button>
 
         {/* Name */}
         <Field label={t("edit.name")}>
@@ -297,6 +347,25 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
           <CitySelect value={city} onChange={setCity} />
         </Field>
       </div>
+
+      {showVerify && (
+        <VerificationModal
+          onDone={() => {
+            setShowVerify(false);
+            queryClient.invalidateQueries({ queryKey: ["me"] });
+          }}
+          onClose={() => setShowVerify(false)}
+        />
+      )}
+
+      {showFreeBoost && (
+        <FreeBoostModal
+          profile={profile}
+          claimed={freeBoostClaimed}
+          onClaimed={() => queryClient.invalidateQueries({ queryKey: ["me"] })}
+          onClose={() => setShowFreeBoost(false)}
+        />
+      )}
     </div>
   );
 }

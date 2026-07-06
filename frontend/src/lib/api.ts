@@ -74,6 +74,7 @@ export interface PublicProfile {
   education: string | null;
   work: string | null;
   isPremium?: boolean;
+  verified?: boolean;
   photos: { url: string; position: number }[];
 }
 
@@ -103,6 +104,7 @@ export interface MatchListItem {
     cityLabel: string;
     photo: string | null;
     isPremium?: boolean;
+    verified?: boolean;
     telegramUsername?: string | null;
   } | null;
   lastMessage: {
@@ -148,6 +150,18 @@ export const api = {
     request<{ profile: unknown }>("/api/photos", {
       method: "PUT",
       body: JSON.stringify({ photos }),
+    }),
+
+  submitVerification: (key: string, url: string) =>
+    request<{ ok: true }>("/api/profile/verification", {
+      method: "POST",
+      body: JSON.stringify({ key, url }),
+    }),
+
+  claimFreeBoost: () =>
+    request<{ ok: true; boostUntil: string }>("/api/premium/free-boost", {
+      method: "POST",
+      body: "{}",
     }),
 
   submitProfile: (payload: {

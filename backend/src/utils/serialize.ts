@@ -25,6 +25,7 @@ export interface PublicProfile {
   education: string | null;
   work: string | null;
   isPremium: boolean;
+  verified: boolean;
   photos: { url: string; position: number }[];
 }
 
@@ -51,6 +52,7 @@ export function toPublicProfile(
     works: profile.works ?? false,
     education: profile.education ?? null,
     work: profile.work ?? null,
+    verified: profile.verificationStatus === "verified",
     photos: photos
       .sort((a, b) => a.position - b.position)
       .map((p) => ({ url: p.url, position: p.position })),
@@ -83,6 +85,8 @@ export function toOwnProfile(profile: Profile, photos: Photo[]) {
     works: profile.works ?? false,
     education: profile.education ?? null,
     work: profile.work ?? null,
+    verified: profile.verificationStatus === "verified",
+    verificationStatus: profile.verificationStatus,
     photos: photos
       .sort((a, b) => a.position - b.position)
       .map((p) => ({ id: p.id, url: p.url, position: p.position, key: p.key })),

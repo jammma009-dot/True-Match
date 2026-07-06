@@ -28,6 +28,30 @@ export function isPremiumActive(premiumUntil: Date | null | undefined): boolean 
   return !!premiumUntil && premiumUntil.getTime() > Date.now();
 }
 
+/**
+ * Whether a profile is "100% complete" (matches the completion bar the user
+ * sees): 3+ photos, bio, height, 3+ interests, smoking & drinking set.
+ */
+export function isProfileComplete(
+  p: {
+    bio: string | null;
+    heightCm: number | null;
+    smoking: unknown;
+    drinking: unknown;
+    interests: string[];
+  },
+  photoCount: number,
+): boolean {
+  return (
+    photoCount >= 3 &&
+    !!p.bio &&
+    !!p.heightCm &&
+    (p.interests?.length ?? 0) >= 3 &&
+    !!p.smoking &&
+    !!p.drinking
+  );
+}
+
 // ---------- Present / Boost ----------
 
 /** Default Present (boost) price in Telegram Stars if the admin hasn't set one. */

@@ -9,6 +9,7 @@ import { Spinner } from "../components/ui";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 import { MatchProfileView } from "../components/MatchProfileView";
 import { PremiumBadge } from "../components/PremiumBadge";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 
 export function ChatScreen({
   match,
@@ -133,6 +134,7 @@ export function ChatScreen({
           <div className="flex min-w-0 items-center gap-1.5">
             <p className="truncate font-semibold text-tg">{match.user?.name ?? "—"}</p>
             {match.user?.isPremium && <PremiumBadge />}
+            {match.user?.verified && <VerifiedBadge />}
           </div>
         </button>
         {/* Premium perk: jump straight to their Telegram (username revealed only

@@ -7,6 +7,7 @@ import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { LogoHeader } from "../components/LogoHeader";
 import { FilterModal } from "../components/FilterModal";
 import { PremiumBadge } from "../components/PremiumBadge";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 import { PremiumModal } from "../components/PremiumModal";
 import { PresentModal } from "../components/PresentModal";
 import { LikeLimitModal } from "../components/LikeLimitModal";
@@ -417,6 +418,7 @@ export function DiscoverScreen({
             <h2 className="text-2xl font-extrabold leading-none text-white">{current.name}</h2>
             <span className="text-lg font-light text-white/90">{current.age}</span>
             {current.isPremium && <PremiumBadge />}
+            {current.verified && <VerifiedBadge />}
           </div>
 
           {/* Core badges — always shown (one row) */}

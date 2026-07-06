@@ -10,6 +10,8 @@ import {
   PREMIUM_DAYS,
   DEFAULT_PRESENT_STARS,
   BOOST_DAYS,
+  isProfileComplete,
+  stackedBoostUntil,
 } from "../lib/premium";
 
 const router = Router();
@@ -109,5 +111,39 @@ router.post(
     }
   },
 );
+
+/**
+ * POST /api/premium/free-boost
+ * One-time reward: a free 1-day boost for a 100%-complete profile.
+ */
+router.post("/free-boost", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+
+  if (user.freeBoostClaimed) {
+    res.status(409).json({ error: "already_claimed" });
+    return;
+  }
+
+  const profile = await prisma.profile.findUnique({
+    where: { userId: user.id },
+    include: { photos: true },
+  });
+  if (!profile) {
+    res.status(404).json({ error: "profile_not_found" });
+    return;
+  }
+  if (!isProfileComplete(profile, profile.photos.length)) {
+    res.status(400).json({ error: "profile_incomplete" });
+    return;
+  }
+
+  const boostUntil = stackedBoostUntil(user.boostUntil, 1);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { boostUntil, freeBoostClaimed: true },
+  });
+
+  res.json({ ok: true, boostUntil: boostUntil.toISOString() });
+});
 
 export default router;

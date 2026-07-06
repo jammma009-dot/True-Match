@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { PremiumBadge } from "./PremiumBadge";
+import { VerifiedBadge } from "./VerifiedBadge";
 import { PresentModal } from "./PresentModal";
 import { Spinner } from "./ui";
 import { haptics } from "../lib/telegram";
@@ -103,6 +104,7 @@ export function MatchProfileView({
                   <h2 className="text-2xl font-extrabold leading-none text-white">{p.name}</h2>
                   <span className="text-lg font-light text-white/90">{p.age}</span>
                   {isPremium && <PremiumBadge variant="label" />}
+                  {p.verified && <VerifiedBadge />}
                 </div>
               </div>
             </div>

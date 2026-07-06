@@ -59,6 +59,7 @@
           <button id="tab-pending" class="active" onclick="showTab('pending')">Pending profiles</button>
           <button id="tab-reports" onclick="showTab('reports')">Reports</button>
           <button id="tab-users" onclick="showTab('users')">All users</button>
+          <button id="tab-verifications" onclick="showTab('verifications')">Verifications</button>
           <button id="tab-settings" onclick="showTab('settings')">Settings</button>
         </div>
         <div style="margin-left:auto; display:flex; gap:8px;">
@@ -71,6 +72,7 @@
         <div id="pending"></div>
         <div id="reports" style="display:none"></div>
         <div id="users" style="display:none"></div>
+        <div id="verifications" style="display:none"></div>
         <div id="settings" style="display:none"></div>
       </main>
     </div>
@@ -155,7 +157,7 @@
         document.getElementById("login").style.display = "block";
       }
 
-      const TABS = ["pending", "reports", "users", "settings"];
+      const TABS = ["pending", "reports", "users", "verifications", "settings"];
       function showTab(tab) {
         TABS.forEach((t) => {
           document.getElementById(t).style.display = t === tab ? "block" : "none";
@@ -164,7 +166,40 @@
         if (tab === "pending") loadPending();
         else if (tab === "reports") loadReports();
         else if (tab === "settings") loadSettings();
+        else if (tab === "verifications") loadVerifications();
         else loadUsers();
+      }
+
+      // ---------- Verifications tab ----------
+      async function loadVerifications() {
+        const el = document.getElementById("verifications");
+        el.innerHTML = "Loading...";
+        const data = await api("/api/admin/verifications");
+        const list = data.verifications || [];
+        if (!list.length) {
+          el.innerHTML = '<div class="empty">No pending verifications 🎉</div>';
+          return;
+        }
+        el.innerHTML = list.map((v) => `
+          <div class="card">
+            <div class="row"><strong>${escapeHtml(v.name)}</strong> <span class="meta">${v.age} y/o</span></div>
+            <p class="meta" style="margin:8px 0 4px">Verification selfie (should hold two fingers):</p>
+            <div class="photos">
+              <img src="${v.verificationPhotoUrl}" style="width:150px;height:200px" onerror="this.style.opacity=0.2"/>
+            </div>
+            <p class="meta" style="margin:8px 0 4px">Profile photos:</p>
+            <div class="photos">${v.photos.map(u => `<img src="${u}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="actions">
+              <button class="btn-approve" onclick="decideVerify('${v.userId}', true)">Verify ✓</button>
+              <button class="btn-reject" onclick="decideVerify('${v.userId}', false)">Reject</button>
+            </div>
+          </div>`).join("");
+      }
+
+      async function decideVerify(userId, approve) {
+        const res = await api(`/api/admin/users/${userId}/verify`, { method: "POST", body: JSON.stringify({ approve }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadVerifications();
       }
 
       // ---------- Settings tab ----------

@@ -96,3 +96,12 @@ export async function notifyBoostGranted(userId: string): Promise<void> {
   const text = `*${t(locale, "bot.boost.title")}*\n\n${t(locale, "bot.boost.body")}`;
   await send(user.telegramId, text, openAppButton(locale, "bot.welcome.openButton"));
 }
+
+/** Notify a user their profile photo was verified (blue check). */
+export async function notifyVerified(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+  const locale = user.language as Locale;
+  const text = `*${t(locale, "bot.verified.title")}*\n\n${t(locale, "bot.verified.body")}`;
+  await send(user.telegramId, text, openAppButton(locale, "bot.welcome.openButton"));
+}

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { Locale, translate } from "../i18n";
 
 export type ProfileStatus = "pending" | "approved" | "rejected";
+export type VerificationStatus = "none" | "pending" | "verified" | "rejected";
 
 export interface OwnProfile {
   id: string;
@@ -24,6 +25,8 @@ export interface OwnProfile {
   works: boolean;
   education: string | null;
   work: string | null;
+  verified: boolean;
+  verificationStatus: VerificationStatus;
   photos: { id: string; url: string; position: number; key?: string }[];
 }
 
@@ -41,6 +44,7 @@ export interface MeResponse {
     premiumUntil?: string | null;
     isBoosted?: boolean;
     boostUntil?: string | null;
+    freeBoostClaimed?: boolean;
   };
   profile: OwnProfile | null;
   stats?: { views: number; likes: number; matches: number; days: number };

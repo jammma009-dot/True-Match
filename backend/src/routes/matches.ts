@@ -62,6 +62,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
               photo: firstPhoto?.url ?? null,
               // Premium status is public so premium users stand out everywhere.
               isPremium: isPremiumActive(other?.premiumUntil ?? null),
+              verified: profile.verificationStatus === "verified",
               // Only exposed to Premium requesters (and only if they have one).
               telegramUsername: requesterPremium ? other?.username ?? null : null,
             }

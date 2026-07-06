@@ -5,7 +5,7 @@ import { requireAdmin } from "../middleware/admin";
 import { validateBody } from "../middleware/validate";
 import { computeAge, isAdult, MIN_AGE } from "../utils/age";
 import { cityLabel } from "../utils/cities";
-import { notifyApproved, notifyRejected, notifyPremiumGranted, notifyBoostGranted } from "../bot/notify";
+import { notifyApproved, notifyRejected, notifyPremiumGranted, notifyBoostGranted, notifyVerified } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 import { getSettings } from "../lib/settings";
 import {
@@ -392,6 +392,54 @@ router.post(
         ? updated.premiumUntil.toISOString()
         : null,
     });
+  },
+);
+
+/**
+ * GET /api/admin/verifications — profiles awaiting photo verification, with
+ * their verification selfie + profile photos for comparison.
+ */
+router.get("/verifications", async (_req: Request, res: Response) => {
+  const profiles = await prisma.profile.findMany({
+    where: { verificationStatus: "pending" },
+    include: { photos: true },
+    orderBy: { updatedAt: "asc" },
+  });
+  res.json({
+    verifications: profiles.map((p) => ({
+      userId: p.userId,
+      name: p.name,
+      age: computeAge(p.birthdate),
+      verificationPhotoUrl: p.verificationPhotoUrl,
+      photos: p.photos
+        .sort((a, b) => a.position - b.position)
+        .map((ph) => ph.url),
+    })),
+  });
+});
+
+/**
+ * POST /api/admin/users/:userId/verify { approve }
+ * Approve or reject a pending photo verification.
+ */
+const verifyDecisionSchema = z.object({ approve: z.boolean() });
+router.post(
+  "/users/:userId/verify",
+  validateBody(verifyDecisionSchema),
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const { approve } = req.body as z.infer<typeof verifyDecisionSchema>;
+    const profile = await prisma.profile.findUnique({ where: { userId } });
+    if (!profile) {
+      res.status(404).json({ error: "profile_not_found" });
+      return;
+    }
+    await prisma.profile.update({
+      where: { userId },
+      data: { verificationStatus: approve ? "verified" : "rejected" },
+    });
+    if (approve) void notifyVerified(userId);
+    res.json({ ok: true });
   },
 );
 

@@ -68,6 +68,15 @@ enum Habit {
   often
 }
 
+// Photo-verification (selfie) review state. Independent of profile approval —
+// the user can keep using the app while verification is pending.
+enum VerificationStatus {
+  none
+  pending
+  verified
+  rejected
+}
+
 // ---------- Models ----------
 
 model User {
@@ -84,6 +93,8 @@ model User {
   // Temporary "boost" (present) — ranks the user at the top of discovery while
   // in the future. Gifting/buying more stacks (adds days on top of remaining).
   boostUntil DateTime?
+  // One-time reward: a free 1-day boost for completing the profile 100%.
+  freeBoostClaimed Boolean @default(false)
   // Whether the user currently has the Mini App open (for chat notification routing)
   isOnline   Boolean  @default(false)
   lastSeenAt DateTime @default(now())
@@ -131,6 +142,11 @@ model Profile {
   works     Boolean  @default(false)
   education String?
   work      String?
+
+  // Photo verification (selfie holding two fingers), reviewed by an admin.
+  verificationStatus   VerificationStatus @default(none)
+  verificationPhotoUrl String?
+  verificationKey      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
