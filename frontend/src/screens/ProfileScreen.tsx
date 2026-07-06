@@ -154,14 +154,16 @@ export function ProfileScreen() {
                 <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${profile.drinking}`)}
               </Badge>
             )}
-            {profile.work && (
+            {profile.works && (
               <Badge tone="brand">
-                <Briefcase className="h-3.5 w-3.5" /> {t("profile.workLabel")}: {profile.work}
+                <Briefcase className="h-3.5 w-3.5" /> {t("profile.workLabel")}
+                {profile.work ? `: ${profile.work}` : ""}
               </Badge>
             )}
-            {profile.education && (
+            {profile.studies && (
               <Badge tone="brand">
-                <GraduationCap className="h-3.5 w-3.5" /> {t("profile.studyLabel")}: {profile.education}
+                <GraduationCap className="h-3.5 w-3.5" /> {t("profile.studyLabel")}
+                {profile.education ? `: ${profile.education}` : ""}
               </Badge>
             )}
             <Badge>{t(`intent.${profile.intent}`)}</Badge>

@@ -125,7 +125,10 @@ model Profile {
   smoking   Habit?
   drinking  Habit?
   interests String[] @default([])
-  // Optional "I study at ..." / "I work at ..." free-text fields.
+  // Whether the user studies / works (toggle). The *Place fields are the
+  // optional free-text ("Universitetda" / "Zavodda").
+  studies   Boolean  @default(false)
+  works     Boolean  @default(false)
   education String?
   work      String?
 

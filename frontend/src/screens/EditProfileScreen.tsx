@@ -79,8 +79,10 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         smoking,
         drinking,
         interests,
-        education: studyOn ? studyText.trim() : null,
-        work: workOn ? workText.trim() : null,
+        studies: studyOn,
+        works: workOn,
+        education: studyOn ? studyText.trim() || null : null,
+        work: workOn ? workText.trim() || null : null,
       });
       await api.setPhotos(photos.map((p) => ({ key: p.key, url: p.url })));
       haptics.notify("success");

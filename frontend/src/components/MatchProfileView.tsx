@@ -130,14 +130,16 @@ export function MatchProfileView({
                   <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${p.drinking}`)}
                 </Badge>
               )}
-              {p.work && (
+              {p.works && (
                 <Badge tone="brand">
-                  <Briefcase className="h-3.5 w-3.5" /> {t("profile.workLabel")}: {p.work}
+                  <Briefcase className="h-3.5 w-3.5" /> {t("profile.workLabel")}
+                  {p.work ? `: ${p.work}` : ""}
                 </Badge>
               )}
-              {p.education && (
+              {p.studies && (
                 <Badge tone="brand">
-                  <GraduationCap className="h-3.5 w-3.5" /> {t("profile.studyLabel")}: {p.education}
+                  <GraduationCap className="h-3.5 w-3.5" /> {t("profile.studyLabel")}
+                  {p.education ? `: ${p.education}` : ""}
                 </Badge>
               )}
             </div>

@@ -50,12 +50,21 @@ export function DiscoverScreen({
   const [reportFor, setReportFor] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
-  // Drag / animation state
-  const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
+  // Drag / animation state. During a drag we update the DOM imperatively (via
+  // refs) so we DON'T re-render React on every pointermove — that's what made
+  // swiping feel laggy. React state only changes on start/end + fly-off.
+  const [dragActive, setDragActive] = useState(false);
   const [leaving, setLeaving] = useState<null | "like" | "pass">(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const likeStampRef = useRef<HTMLDivElement>(null);
+  const nopeStampRef = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
+
+  const resetStamps = () => {
+    if (likeStampRef.current) likeStampRef.current.style.opacity = "0";
+    if (nopeStampRef.current) nopeStampRef.current.style.opacity = "0";
+  };
 
   useEffect(() => {
     if (data?.queue) {
@@ -83,6 +92,8 @@ export function DiscoverScreen({
   const triggerSwipe = (action: "like" | "pass") => {
     if (!current || busyRef.current || leaving) return;
     busyRef.current = true;
+    resetStamps();
+    setDragActive(false);
     setLeaving(action);
     haptics.impact(action === "like" ? "medium" : "light");
 
@@ -128,7 +139,6 @@ export function DiscoverScreen({
     window.setTimeout(() => {
       advance();
       setLeaving(null);
-      setDrag({ x: 0, y: 0, active: false });
       busyRef.current = false;
     }, 300);
   };
@@ -168,28 +178,39 @@ export function DiscoverScreen({
   const onPointerDown = (e: React.PointerEvent) => {
     if (leaving) return;
     startRef.current = { x: e.clientX, y: e.clientY };
-    setDrag({ x: 0, y: 0, active: true });
-    cardRef.current?.setPointerCapture(e.pointerId);
+    setDragActive(true);
+    const card = cardRef.current;
+    if (card) card.style.transition = "none";
+    card?.setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!startRef.current) return;
-    setDrag({
-      x: e.clientX - startRef.current.x,
-      y: e.clientY - startRef.current.y,
-      active: true,
-    });
+    const dx = e.clientX - startRef.current.x;
+    const dy = e.clientY - startRef.current.y;
+    // Imperative — no React re-render, so dragging stays buttery smooth.
+    const card = cardRef.current;
+    if (card) {
+      card.style.transform = `translate3d(${dx}px, ${dy * 0.12}px, 0) rotate(${dx / 22}deg)`;
+    }
+    if (likeStampRef.current) {
+      likeStampRef.current.style.opacity = String(Math.min(1, Math.max(0, dx / SWIPE_THRESHOLD)));
+    }
+    if (nopeStampRef.current) {
+      nopeStampRef.current.style.opacity = String(Math.min(1, Math.max(0, -dx / SWIPE_THRESHOLD)));
+    }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
     if (!startRef.current || !current) {
-      setDrag({ x: 0, y: 0, active: false });
+      setDragActive(false);
       return;
     }
     const dx = e.clientX - startRef.current.x;
     const dy = e.clientY - startRef.current.y;
     const dist = Math.hypot(dx, dy);
     startRef.current = null;
+    resetStamps();
 
     if (dist < TAP_SLOP) {
       // Treat as a tap → cycle photos based on where they tapped.
@@ -203,15 +224,16 @@ export function DiscoverScreen({
         }
         haptics.select();
       }
-      setDrag({ x: 0, y: 0, active: false });
+      setDragActive(false);
       return;
     }
 
     if (Math.abs(dx) > SWIPE_THRESHOLD) {
       triggerSwipe(dx > 0 ? "like" : "pass");
     } else {
-      // Snap back
-      setDrag({ x: 0, y: 0, active: false });
+      // Snap back — React re-render restores transform to identity with a
+      // transition, animating the card home.
+      setDragActive(false);
     }
   };
 
@@ -279,14 +301,17 @@ export function DiscoverScreen({
 
   const photo = current.photos[photoIdx]?.url ?? current.photos[0]?.url;
 
-  // Card transform
+  // Card transform is React-controlled only when NOT actively dragging (fly-off
+  // or snap-back). During a drag the transform is set imperatively in onPointerMove.
   const transform = leaving
-    ? `translateX(${leaving === "like" ? 130 : -130}%) rotate(${leaving === "like" ? 20 : -20}deg)`
-    : `translate(${drag.x}px, ${drag.y * 0.15}px) rotate(${drag.x / 22}deg)`;
-  const transition = drag.active ? "none" : "transform 0.3s cubic-bezier(0.22,1,0.36,1)";
+    ? `translateX(${leaving === "like" ? 130 : -130}%) rotate(${leaving === "like" ? 18 : -18}deg)`
+    : "translate3d(0,0,0)";
+  const transition = dragActive
+    ? "none"
+    : "transform 0.32s cubic-bezier(0.22,1,0.36,1)";
 
-  const likeOpacity = leaving === "like" ? 1 : Math.min(1, Math.max(0, drag.x / SWIPE_THRESHOLD));
-  const nopeOpacity = leaving === "pass" ? 1 : Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
+  const likeOpacity = leaving === "like" ? 1 : 0;
+  const nopeOpacity = leaving === "pass" ? 1 : 0;
 
   return (
     <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-2 pb-1">
@@ -302,7 +327,7 @@ export function DiscoverScreen({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        style={{ transform, transition, touchAction: "none" }}
+        style={{ transform, transition, touchAction: "none", willChange: "transform" }}
         className="relative h-full w-full cursor-grab overflow-hidden rounded-[28px] bg-neutral-900 shadow-2xl shadow-black/40 active:cursor-grabbing"
       >
         {/* Fallback gradient (shows if the image is missing/broken) */}
@@ -366,60 +391,64 @@ export function DiscoverScreen({
           </div>
         )}
 
-        {/* LIKE / NOPE stamps */}
+        {/* LIKE / NOPE stamps (opacity updated imperatively while dragging) */}
         <div
+          ref={likeStampRef}
           style={{ opacity: likeOpacity }}
-          className="absolute left-5 top-24 z-20 -rotate-12 rounded-lg border-4 border-brand px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-brand"
+          className="pointer-events-none absolute left-5 top-24 z-20 -rotate-12 rounded-lg border-4 border-brand px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-brand"
         >
           LIKE
         </div>
         <div
+          ref={nopeStampRef}
           style={{ opacity: nopeOpacity }}
-          className="absolute right-5 top-24 z-20 rotate-12 rounded-lg border-4 border-white px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-white"
+          className="pointer-events-none absolute right-5 top-24 z-20 rotate-12 rounded-lg border-4 border-white px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-white"
         >
           NOPE
         </div>
 
         {/* Info overlay — compact by default (shows a preview), expands on "more" */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/40 to-transparent px-4 pb-[74px] pt-8">
-          <div className="mb-0.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand">
-            <Heart className="h-2.5 w-2.5" fill="currentColor" />
+          <div className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+            <Heart className="h-3 w-3" fill="currentColor" />
             {t(`intent.${current.intent}`)}
           </div>
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-xl font-extrabold leading-none text-white">{current.name}</h2>
-            <span className="text-base font-light text-white/90">{current.age}</span>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-extrabold leading-none text-white">{current.name}</h2>
+            <span className="text-lg font-light text-white/90">{current.age}</span>
             {current.isPremium && <PremiumBadge />}
           </div>
 
           {/* Core badges — always shown (one row) */}
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-              <MapPin className="h-2.5 w-2.5" /> {t(`city.${current.city}`)}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+              <MapPin className="h-3 w-3" /> {t(`city.${current.city}`)}
             </span>
-            <span className="rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+            <span className="rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
               {current.gender === "male"
                 ? t("onboarding.gender.male")
                 : t("onboarding.gender.female")}
             </span>
             {current.heightCm && (
-              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-                <Ruler className="h-2.5 w-2.5" /> {current.heightCm} cm
+              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                <Ruler className="h-3 w-3" /> {current.heightCm} cm
               </span>
             )}
           </div>
 
-          {/* Work / Study — distinct coloured badges (icon differentiates) */}
-          {(current.work || current.education) && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {current.work && (
-                <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/25 px-2 py-0.5 text-[10px] font-semibold text-amber-100 backdrop-blur">
-                  <Briefcase className="h-2.5 w-2.5" /> {t("profile.workLabel")}: {current.work}
+          {/* Work / Study — shown when toggled on; place text is optional. */}
+          {(current.works || current.studies) && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {current.works && (
+                <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/25 px-2 py-0.5 text-[11px] font-semibold text-amber-100 backdrop-blur">
+                  <Briefcase className="h-3 w-3" /> {t("profile.workLabel")}
+                  {current.work ? `: ${current.work}` : ""}
                 </span>
               )}
-              {current.education && (
-                <span className="flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/25 px-2 py-0.5 text-[10px] font-semibold text-sky-100 backdrop-blur">
-                  <GraduationCap className="h-2.5 w-2.5" /> {t("profile.studyLabel")}: {current.education}
+              {current.studies && (
+                <span className="flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/25 px-2 py-0.5 text-[11px] font-semibold text-sky-100 backdrop-blur">
+                  <GraduationCap className="h-3 w-3" /> {t("profile.studyLabel")}
+                  {current.education ? `: ${current.education}` : ""}
                 </span>
               )}
             </div>
@@ -435,21 +464,21 @@ export function DiscoverScreen({
                     return (
                       <span
                         key={key}
-                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
+                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
                       >
-                        {Icon && <Icon className="h-2.5 w-2.5" />} {t(`interest.${key}`)}
+                        {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
                       </span>
                     );
                   })}
                   {current.interests.length > 2 && (
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur">
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur">
                       +{current.interests.length - 2}
                     </span>
                   )}
                 </div>
               )}
               {current.bio && (
-                <p className="mt-1.5 line-clamp-1 text-[12px] leading-snug text-white/85">
+                <p className="mt-1.5 line-clamp-1 text-[13px] leading-snug text-white/85">
                   {current.bio}
                 </p>
               )}
@@ -462,13 +491,13 @@ export function DiscoverScreen({
               {(current.smoking || current.drinking) && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {current.smoking && (
-                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-                      <SmokingIcon className="h-2.5 w-2.5" /> {t(`habit.${current.smoking}`)}
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                      <SmokingIcon className="h-3 w-3" /> {t(`habit.${current.smoking}`)}
                     </span>
                   )}
                   {current.drinking && (
-                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-                      <DrinkingIcon className="h-2.5 w-2.5" /> {t(`habit.${current.drinking}`)}
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                      <DrinkingIcon className="h-3 w-3" /> {t(`habit.${current.drinking}`)}
                     </span>
                   )}
                 </div>
@@ -481,9 +510,9 @@ export function DiscoverScreen({
                     return (
                       <span
                         key={key}
-                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
+                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
                       >
-                        {Icon && <Icon className="h-2.5 w-2.5" />} {t(`interest.${key}`)}
+                        {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
                       </span>
                     );
                   })}

@@ -15,9 +15,9 @@ function genShadows(count: number): string {
 }
 
 // Generated once at module load so the field is stable across re-renders.
-const SMALL = genShadows(700);
-const MEDIUM = genShadows(200);
-const BIG = genShadows(100);
+const SMALL = genShadows(400);
+const MEDIUM = genShadows(140);
+const BIG = genShadows(70);
 
 export function StarBackground() {
   return (

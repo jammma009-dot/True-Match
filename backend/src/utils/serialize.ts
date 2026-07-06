@@ -20,6 +20,8 @@ export interface PublicProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
+  studies: boolean;
+  works: boolean;
   education: string | null;
   work: string | null;
   isPremium: boolean;
@@ -45,6 +47,8 @@ export function toPublicProfile(
     smoking: profile.smoking ?? null,
     drinking: profile.drinking ?? null,
     interests: profile.interests ?? [],
+    studies: profile.studies ?? false,
+    works: profile.works ?? false,
     education: profile.education ?? null,
     work: profile.work ?? null,
     photos: photos
@@ -75,6 +79,8 @@ export function toOwnProfile(profile: Profile, photos: Photo[]) {
     smoking: profile.smoking ?? null,
     drinking: profile.drinking ?? null,
     interests: profile.interests ?? [],
+    studies: profile.studies ?? false,
+    works: profile.works ?? false,
     education: profile.education ?? null,
     work: profile.work ?? null,
     photos: photos
