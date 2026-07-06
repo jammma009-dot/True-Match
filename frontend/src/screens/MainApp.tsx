@@ -158,7 +158,7 @@ export function MainApp() {
         {tab === "discover" && <DiscoverScreen onMatch={setIncomingMatch} />}
         {tab === "likes" && (
           <div className="h-full overflow-y-auto">
-            <LikesScreen />
+            <LikesScreen onMatch={setIncomingMatch} />
           </div>
         )}
         {tab === "chats" && (

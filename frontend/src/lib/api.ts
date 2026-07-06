@@ -126,6 +126,12 @@ export const api = {
       { method: "POST", body: JSON.stringify({ contentType }) },
     ),
 
+  setPhotos: (photos: { key: string; url: string }[]) =>
+    request<{ profile: unknown }>("/api/photos", {
+      method: "PUT",
+      body: JSON.stringify({ photos }),
+    }),
+
   submitProfile: (payload: {
     name: string;
     birthdate: string;

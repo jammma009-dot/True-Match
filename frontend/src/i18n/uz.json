@@ -87,6 +87,8 @@
 
   "likes.title": "Layklar",
   "likes.subtitle": "Sizni yoqtirganlar",
+  "likes.subtitlePremium": "Sizni yoqtirganlar — yozish uchun bosing",
+  "likes.locked": "Premium — kim yoqtirganini ko'ring",
   "likes.empty": "Hozircha sizni hech kim yoqtirmadi. Profilingizni to'ldiring!",
   "likes.comingSoon": "Sizni yoqtirganlar tez orada shu yerda ko'rinadi.",
   "filter.title": "Filtr",
@@ -146,6 +148,8 @@
   "edit.height": "Bo'y",
   "edit.city": "Shahar",
   "edit.intent": "Nimani qidiryapsiz",
+  "edit.photos": "Rasmlar",
+  "edit.photosRequired": "Kamida 1 ta rasm kerak",
   "edit.interests": "Qiziqishlar",
   "edit.interestsHint": "10 tagacha tanlang",
   "edit.smoking": "Chekasizmi?",

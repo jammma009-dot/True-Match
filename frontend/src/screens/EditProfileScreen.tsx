@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import { INTEREST_ICON, INTENT_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { showBackButton, hideBackButton, haptics } from "../lib/telegram";
 import { CitySelect } from "./onboarding/CitySelect";
+import { PhotoGrid, UploadedPhoto } from "./onboarding/PhotoGrid";
 
 const MAX_INTERESTS = 10;
 
@@ -28,7 +29,13 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
   const [smoking, setSmoking] = useState<string | null>(profile?.smoking ?? null);
   const [drinking, setDrinking] = useState<string | null>(profile?.drinking ?? null);
   const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>(
+    (profile?.photos ?? [])
+      .filter((p) => p.key)
+      .map((p) => ({ key: p.key as string, url: p.url })),
+  );
   const [saving, setSaving] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
 
   useEffect(() => {
     showBackButton(onClose);
@@ -51,6 +58,12 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
 
   const save = async () => {
     if (!name.trim()) return;
+    if (photos.length < 1) {
+      setPhotoError(true);
+      haptics.notify("error");
+      return;
+    }
+    setPhotoError(false);
     setSaving(true);
     try {
       await api.updateProfile({
@@ -63,6 +76,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         drinking,
         interests,
       });
+      await api.setPhotos(photos.map((p) => ({ key: p.key, url: p.url })));
       haptics.notify("success");
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       onClose();
@@ -97,6 +111,14 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
 
       {/* Body */}
       <div className="flex-1 space-y-6 overflow-y-auto p-4 pb-10">
+        {/* Photos */}
+        <Field label={t("edit.photos")}>
+          <PhotoGrid photos={photos} onChange={setPhotos} />
+          {photoError && (
+            <p className="mt-2 text-sm text-pass">{t("edit.photosRequired")}</p>
+          )}
+        </Field>
+
         {/* Name */}
         <Field label={t("edit.name")}>
           <input

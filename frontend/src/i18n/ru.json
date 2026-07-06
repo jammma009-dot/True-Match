@@ -87,6 +87,8 @@
 
   "likes.title": "Лайки",
   "likes.subtitle": "Кто вас лайкнул",
+  "likes.subtitlePremium": "Кто вас лайкнул — нажмите, чтобы написать",
+  "likes.locked": "Premium — узнайте, кто вас лайкнул",
   "likes.empty": "Пока вас никто не лайкнул. Заполните профиль!",
   "likes.comingSoon": "Те, кто вас лайкнул, скоро появятся здесь.",
   "filter.title": "Фильтр",
@@ -146,6 +148,8 @@
   "edit.height": "Рост",
   "edit.city": "Город",
   "edit.intent": "Что вы ищете",
+  "edit.photos": "Фотографии",
+  "edit.photosRequired": "Нужна хотя бы 1 фотография",
   "edit.interests": "Интересы",
   "edit.interestsHint": "Выберите до 10",
   "edit.smoking": "Курите?",

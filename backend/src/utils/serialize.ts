@@ -73,6 +73,6 @@ export function toOwnProfile(profile: Profile, photos: Photo[]) {
     interests: profile.interests ?? [],
     photos: photos
       .sort((a, b) => a.position - b.position)
-      .map((p) => ({ id: p.id, url: p.url, position: p.position })),
+      .map((p) => ({ id: p.id, url: p.url, position: p.position, key: p.key })),
   };
 }

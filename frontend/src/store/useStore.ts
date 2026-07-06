@@ -20,7 +20,7 @@ export interface OwnProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
-  photos: { id: string; url: string; position: number }[];
+  photos: { id: string; url: string; position: number; key?: string }[];
 }
 
 export interface CityRef {
