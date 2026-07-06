@@ -30,7 +30,7 @@ export function BottomNav({
   const t = useT();
   return (
     <nav
-      className={`flex flex-shrink-0 border-t border-white/5 bg-[var(--tg-secondary-bg-color)]/95 backdrop-blur ${
+      className={`flex flex-shrink-0 border-t border-white/5 bg-[#050608] ${
         disabled ? "pointer-events-none opacity-40" : ""
       }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
