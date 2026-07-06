@@ -29,8 +29,12 @@ export function ChatScreen({
   });
 
   useEffect(() => {
-    if (data?.messages) setMessages(data.messages);
-  }, [data]);
+    if (data?.messages) {
+      setMessages(data.messages);
+      // Loading the chat marks messages read server-side → refresh the badge.
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+    }
+  }, [data, queryClient]);
 
   // Telegram back button returns to the matches list.
   useEffect(() => {
@@ -38,20 +42,26 @@ export function ChatScreen({
     return () => hideBackButton();
   }, [onBack]);
 
-  // Socket: listen for incoming messages for this match.
+  // Socket: tell the server this chat is open (so it won't send a redundant
+  // Telegram notification) and listen for incoming messages.
   useEffect(() => {
     const socket = getSocket();
+    socket.emit("chat:open", { matchId: match.matchId });
+
     const onNew = (msg: ChatMessage) => {
       if (msg.matchId === match.matchId) {
         setMessages((prev) =>
           prev.some((m) => m.id === msg.id) ? prev : [...prev, msg],
         );
+        // We're viewing this chat → mark read so the badge doesn't count it.
+        void api.markRead(match.matchId).catch(() => undefined);
       }
-      // Keep the matches list preview fresh.
       queryClient.invalidateQueries({ queryKey: ["matches"] });
     };
     socket.on("message:new", onNew);
+
     return () => {
+      socket.emit("chat:close", { matchId: match.matchId });
       socket.off("message:new", onNew);
     };
   }, [match.matchId, queryClient]);

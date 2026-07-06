@@ -17,6 +17,10 @@ export default function App() {
     queryKey: ["me"],
     queryFn: api.getMe,
     enabled: hasInitData,
+    // While the profile is under review, poll so approval/rejection reflects
+    // automatically without the user having to close & reopen the app.
+    refetchInterval: (query) =>
+      query.state.data?.profile?.status === "pending" ? 5000 : false,
   });
 
   useEffect(() => {

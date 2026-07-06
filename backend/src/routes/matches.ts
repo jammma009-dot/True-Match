@@ -7,7 +7,7 @@ import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { createMessage } from "../services/messages";
 import { notifyNewMessage } from "../bot/notify";
-import { emitToUser } from "../socket";
+import { emitToUser, isUserViewingChat } from "../socket";
 
 const router = Router();
 
@@ -35,6 +35,9 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
         where: { matchId: m.id },
         orderBy: { createdAt: "desc" },
       });
+      const unread = await prisma.message.count({
+        where: { matchId: m.id, senderId: { not: user.id }, readAt: null },
+      });
 
       const profile = other?.profile;
       const firstPhoto = profile?.photos.sort(
@@ -61,11 +64,30 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
               createdAt: lastMessage.createdAt.toISOString(),
             }
           : null,
+        unread,
       };
     }),
   );
 
   res.json({ matches: result });
+});
+
+/**
+ * POST /api/matches/:matchId/read — mark all messages from the other person as
+ * read (used when the chat is open / a message arrives while viewing).
+ */
+router.post("/:matchId/read", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+  const match = await getMemberMatch(req.params.matchId, user.id);
+  if (!match) {
+    res.status(404).json({ error: "match_not_found" });
+    return;
+  }
+  await prisma.message.updateMany({
+    where: { matchId: match.id, senderId: { not: user.id }, readAt: null },
+    data: { readAt: new Date() },
+  });
+  res.json({ ok: true });
 });
 
 /** Verify the current user belongs to the match; returns match or null. */
@@ -137,12 +159,8 @@ router.post(
     // Real-time push to the recipient if connected.
     emitToUser(result.recipientId!, "message:new", result.message);
 
-    // Offline notification via bot if the recipient isn't active in the app.
-    const recipient = await prisma.user.findUnique({
-      where: { id: result.recipientId! },
-      select: { isOnline: true },
-    });
-    if (!recipient?.isOnline) {
+    // Bot notification unless the recipient is actively viewing this chat.
+    if (!isUserViewingChat(result.recipientId!, req.params.matchId)) {
       void notifyNewMessage(result.recipientId!);
     }
 

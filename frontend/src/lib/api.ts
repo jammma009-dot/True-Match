@@ -75,6 +75,7 @@ export interface MatchListItem {
     senderId: string;
     createdAt: string;
   } | null;
+  unread?: number;
 }
 
 export interface ChatMessage {
@@ -132,6 +133,12 @@ export const api = {
 
   getMessages: (matchId: string) =>
     request<{ messages: ChatMessage[] }>(`/api/matches/${matchId}/messages`),
+
+  markRead: (matchId: string) =>
+    request<{ ok: true }>(`/api/matches/${matchId}/read`, {
+      method: "POST",
+      body: "{}",
+    }),
 
   sendMessage: (matchId: string, body: string) =>
     request<{ message: ChatMessage }>(`/api/matches/${matchId}/messages`, {

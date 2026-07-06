@@ -3,12 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useStore, useT } from "../../store/useStore";
 import { api, ApiError } from "../../lib/api";
 import { Button, ProgressBar } from "../../components/ui";
-import {
-  showBackButton,
-  hideBackButton,
-  haptics,
-  getTelegramFirstName,
-} from "../../lib/telegram";
+import { showBackButton, hideBackButton, haptics } from "../../lib/telegram";
 import { DatePicker, DateValue } from "./DatePicker";
 import { CitySelect } from "./CitySelect";
 import { PhotoGrid, UploadedPhoto } from "./PhotoGrid";
@@ -45,8 +40,8 @@ export function OnboardingWizard() {
   const [stepIndex, setStepIndex] = useState(0);
   const step: Step = STEPS[stepIndex];
 
-  // Wizard state
-  const [name, setName] = useState(getTelegramFirstName() ?? "");
+  // Wizard state (name starts empty — never pre-filled from Telegram)
+  const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState<DateValue | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [gender, setGender] = useState<"male" | "female" | null>(null);

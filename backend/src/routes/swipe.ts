@@ -5,9 +5,31 @@ import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { checkAndIncrSwipe } from "../lib/ratelimit";
 import { notifyNewMatch } from "../bot/notify";
-import { SwipeAction } from "@prisma/client";
+import { emitToUser } from "../socket";
+import { computeAge } from "../utils/age";
+import { cityLabel } from "../utils/cities";
+import { SwipeAction, Prisma } from "@prisma/client";
 
 const router = Router();
+
+type FullUser = Prisma.UserGetPayload<{
+  include: { profile: { include: { photos: true } } };
+}>;
+
+/** Build a compact "match list item"-shaped payload for a matched user. */
+function miniMatchUser(u: FullUser) {
+  const p = u.profile;
+  const photo =
+    p?.photos.slice().sort((a, b) => a.position - b.position)[0]?.url ?? null;
+  return {
+    userId: u.id,
+    name: p?.name ?? "",
+    age: p ? computeAge(p.birthdate) : 0,
+    city: p?.city ?? "",
+    cityLabel: p ? cityLabel(p.city) : "",
+    photo,
+  };
+}
 
 /** Order a pair of user ids so matches are stored uniquely & unordered. */
 export function orderPair(a: string, b: string): [string, string] {
@@ -111,9 +133,39 @@ router.post(
         matched = true;
         matchId = match.id;
 
-        // Notify both users (fire and forget).
+        // Notify both users via the bot (fire and forget).
         void notifyNewMatch(user.id);
         void notifyNewMatch(targetUserId);
+
+        // Real-time: push a "new match" event to BOTH users so the celebration
+        // appears instantly on both sides — not only for whoever swiped last.
+        const [meFull, targetFull] = await Promise.all([
+          prisma.user.findUnique({
+            where: { id: user.id },
+            include: { profile: { include: { photos: true } } },
+          }),
+          prisma.user.findUnique({
+            where: { id: targetUserId },
+            include: { profile: { include: { photos: true } } },
+          }),
+        ]);
+        const now = new Date().toISOString();
+        if (targetFull) {
+          emitToUser(user.id, "match:new", {
+            matchId: match.id,
+            createdAt: now,
+            user: miniMatchUser(targetFull),
+            lastMessage: null,
+          });
+        }
+        if (meFull) {
+          emitToUser(targetUserId, "match:new", {
+            matchId: match.id,
+            createdAt: now,
+            user: miniMatchUser(meFull),
+            lastMessage: null,
+          });
+        }
       }
     }
 

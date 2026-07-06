@@ -8,6 +8,10 @@ import { notifyNewMessage } from "../bot/notify";
 
 let io: Server | null = null;
 
+// Tracks which chat (matchId) each connected user is currently viewing, so we
+// only send a Telegram notification when they're NOT looking at that chat.
+const activeChatByUser = new Map<string, string>();
+
 /** Room name for a given app user id. */
 const userRoom = (userId: string) => `user:${userId}`;
 
@@ -74,16 +78,21 @@ export function initSocket(server: HttpServer): Server {
         io?.to(userRoom(result.recipientId!)).emit("message:new", result.message);
         ack?.({ ok: true, message: result.message });
 
-        // Offline notification via bot.
-        const recipient = await prisma.user.findUnique({
-          where: { id: result.recipientId! },
-          select: { isOnline: true },
-        });
-        if (!recipient?.isOnline) {
+        // Send a Telegram notification unless the recipient is actively
+        // viewing THIS chat right now.
+        if (!isUserViewingChat(result.recipientId!, payload.matchId)) {
           void notifyNewMessage(result.recipientId!);
         }
       },
     );
+
+    // Track which chat the user currently has open.
+    socket.on("chat:open", (payload: { matchId: string }) => {
+      if (payload?.matchId) activeChatByUser.set(userId, payload.matchId);
+    });
+    socket.on("chat:close", () => {
+      activeChatByUser.delete(userId);
+    });
 
     // Typing indicator (best-effort, not persisted).
     socket.on("typing", (payload: { matchId: string; recipientId: string }) => {
@@ -96,6 +105,7 @@ export function initSocket(server: HttpServer): Server {
     });
 
     socket.on("disconnect", () => {
+      activeChatByUser.delete(userId);
       void prisma.user
         .update({ where: { id: userId }, data: { isOnline: false, lastSeenAt: new Date() } })
         .catch(() => undefined);
@@ -108,4 +118,9 @@ export function initSocket(server: HttpServer): Server {
 /** Emit an event to a specific app user's room (used by REST fallback). */
 export function emitToUser(userId: string, event: string, payload: unknown): void {
   io?.to(userRoom(userId)).emit(event, payload);
+}
+
+/** Whether a user currently has a specific chat (match) open. */
+export function isUserViewingChat(userId: string, matchId: string): boolean {
+  return activeChatByUser.get(userId) === matchId;
 }
