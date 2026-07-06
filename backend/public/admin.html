@@ -182,11 +182,17 @@
             <input id="set-payment" type="text" placeholder="e.g. truematch_pay" value="${escapeHtml(s.paymentUsername || "")}" />
 
             <h2 style="margin:22px 0 0">Premium</h2>
-            <p class="meta">Telegram Stars are credited to the bot automatically on purchase.</p>
+            <p class="meta">
+              <b>How Stars work:</b> Star payments always go to the <b>bot's</b> balance —
+              Telegram cannot send them to a personal account. To cash out bot Stars you must
+              wait ~21 days, reach the minimum balance, then withdraw to TON via Fragment.
+              For money paid <b>directly to you</b>, use the "Pay via card" flow (Payment username above)
+              and grant Premium manually here.
+            </p>
             <label>Premium price (Telegram Stars ⭐)</label>
             <input id="set-price" type="number" min="1" step="1" placeholder="e.g. 250" value="${s.premiumPriceStars ?? ""}" />
-            <label>Star recipient — Telegram numeric ID to notify on purchase (optional)</label>
-            <input id="set-recipient" type="text" placeholder="e.g. 123456789 (numeric id) — leave blank if unsure" value="${escapeHtml(s.starRecipient || "")}" />
+            <label>Purchase notification ID — Telegram numeric ID that gets a "someone bought Premium" message (optional; does NOT receive the Stars)</label>
+            <input id="set-recipient" type="text" placeholder="e.g. 123456789 (numeric id) — notification only" value="${escapeHtml(s.starRecipient || "")}" />
 
             <div class="actions" style="margin-top:16px">
               <button class="primary" onclick="saveSettings()">Save settings</button>
@@ -301,16 +307,22 @@
           ? `<span class="tag badge-${p.status}">${p.status}</span>`
           : '<span class="tag">no profile</span>';
         const banned = u.isBanned ? '<span class="tag badge-banned">BANNED</span>' : "";
+        const premiumTag = u.isPremium
+          ? `<span class="tag" style="background:#e8a11c;color:#3a2600">⭐ PREMIUM${u.premiumUntil ? " until " + u.premiumUntil.slice(0, 10) : ""}</span>`
+          : "";
         const photos = p && p.photos.length
           ? `<div class="photos">${p.photos.map(url => `<img src="${url}" onerror="this.style.opacity=0.2"/>`).join("")}</div>`
           : "";
         const info = p
-          ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned}`
-          : `<strong class="meta">(no profile — only /start)</strong> ${banned}`;
+          ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned} ${premiumTag}`
+          : `<strong class="meta">(no profile — only /start)</strong> ${banned} ${premiumTag}`;
         const banBtn = u.isBanned
           ? `<button class="btn-unban" onclick="unbanUser('${u.userId}')">Unban</button>`
           : `<button class="btn-ban" onclick="banUser('${u.userId}')">Ban</button>`;
         const editBtn = p ? `<button class="btn-edit" onclick="openEdit('${u.userId}')">Edit</button>` : "";
+        const premiumBtn = u.isPremium
+          ? `<button style="background:#7a5a00" onclick="revokePremium('${u.userId}')">Revoke Premium</button>`
+          : `<button style="background:#e8a11c;color:#3a2600" onclick="grantPremium('${u.userId}')">Grant Premium</button>`;
         return `
           <div class="card">
             <div class="row">${info}</div>
@@ -318,6 +330,7 @@
             ${photos}
             <div class="actions">
               ${editBtn}
+              ${premiumBtn}
               ${banBtn}
               <button class="btn-delete" onclick="deleteUser('${u.userId}')">Delete</button>
             </div>
@@ -361,6 +374,23 @@
       async function banUser(userId) {
         if (!confirm("Ban this user? They won't be able to use the app.")) return;
         await api(`/api/admin/users/${userId}/ban`, { method: "POST", body: "{}" });
+        loadUsers();
+      }
+
+      async function grantPremium(userId) {
+        const input = prompt("Grant Premium for how many days? (e.g. 30)", "30");
+        if (input === null) return;
+        const days = Number(input);
+        if (!Number.isFinite(days) || days <= 0) { alert("Enter a positive number of days."); return; }
+        const res = await api(`/api/admin/users/${userId}/premium`, { method: "POST", body: JSON.stringify({ days }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
+      async function revokePremium(userId) {
+        if (!confirm("Revoke this user's Premium now?")) return;
+        const res = await api(`/api/admin/users/${userId}/premium`, { method: "POST", body: JSON.stringify({ days: 0 }) });
+        if (res.error) { alert("Error: " + res.error); return; }
         loadUsers();
       }
       async function unbanUser(userId) {

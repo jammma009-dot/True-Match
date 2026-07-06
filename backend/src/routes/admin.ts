@@ -8,7 +8,7 @@ import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 import { getSettings } from "../lib/settings";
-import { DEFAULT_PREMIUM_STARS } from "../lib/premium";
+import { DEFAULT_PREMIUM_STARS, isPremiumActive } from "../lib/premium";
 import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
 
 const router = Router();
@@ -253,6 +253,8 @@ router.get("/users", async (req: Request, res: Response) => {
       telegramId: u.telegramId.toString(),
       language: u.language,
       isBanned: u.isBanned,
+      isPremium: isPremiumActive(u.premiumUntil),
+      premiumUntil: u.premiumUntil ? u.premiumUntil.toISOString() : null,
       createdAt: u.createdAt.toISOString(),
       profile: u.profile
         ? {
@@ -343,6 +345,40 @@ router.patch(
     if (notify === "rejected") void notifyRejected(userId);
 
     res.json({ ok: true });
+  },
+);
+
+/**
+ * POST /api/admin/users/:userId/premium { days }
+ * Manually grant Premium (e.g. after a card payment). days=0 revokes it.
+ */
+const premiumSchema = z.object({
+  days: z.coerce.number().int().min(0).max(3650),
+});
+router.post(
+  "/users/:userId/premium",
+  validateBody(premiumSchema),
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const { days } = req.body as z.infer<typeof premiumSchema>;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: "user_not_found" });
+      return;
+    }
+    const premiumUntil =
+      days > 0 ? new Date(Date.now() + days * 86_400_000) : null;
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { premiumUntil },
+    });
+    res.json({
+      ok: true,
+      isPremium: isPremiumActive(updated.premiumUntil),
+      premiumUntil: updated.premiumUntil
+        ? updated.premiumUntil.toISOString()
+        : null,
+    });
   },
 );
 
