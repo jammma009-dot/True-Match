@@ -182,10 +182,22 @@ export function DiscoverScreen({
   const nopeOpacity = leaving === "pass" ? 1 : Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
 
   return (
-    <div className="relative h-full w-full select-none overflow-hidden px-3 pb-3 pt-3">
-      {/* Card */}
-      <div
-        ref={cardRef}
+    <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-3 pb-3 pt-2">
+      {/* Brand logo header */}
+      <div className="flex flex-shrink-0 items-center justify-center py-1.5">
+        <img
+          src="/logo-mark.png"
+          alt="True Match"
+          draggable={false}
+          className="h-7 w-auto object-contain"
+        />
+      </div>
+
+      {/* Swipe area */}
+      <div className="relative min-h-0 flex-1">
+        {/* Card */}
+        <div
+          ref={cardRef}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -313,6 +325,7 @@ export function DiscoverScreen({
         >
           <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
         </button>
+      </div>
       </div>
 
       {reportFor && (

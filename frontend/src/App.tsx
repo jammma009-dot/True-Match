@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "./lib/api";
 import { getInitData } from "./lib/telegram";
 import { useStore, useT } from "./store/useStore";
-import { Spinner, FullScreen } from "./components/ui";
+import { FullScreen } from "./components/ui";
+import { LoadingScreen } from "./components/LoadingScreen";
 import { OnboardingWizard } from "./screens/onboarding/OnboardingWizard";
 import { PendingScreen, RejectedScreen } from "./screens/StatusScreens";
 import { MainApp } from "./screens/MainApp";
@@ -31,19 +32,18 @@ export default function App() {
   if (!hasInitData) {
     return (
       <FullScreen>
-        <div className="mb-4 text-5xl">🖤</div>
+        <img
+          src="/logo-mark.png"
+          alt="True Match"
+          className="mb-6 w-48 max-w-[70%] object-contain"
+        />
         <p className="text-tg-hint">{t("error.notInTelegram")}</p>
       </FullScreen>
     );
   }
 
   if (isLoading) {
-    return (
-      <FullScreen>
-        <Spinner />
-        <p className="mt-2 text-tg-hint">{t("loading.app")}</p>
-      </FullScreen>
-    );
+    return <LoadingScreen />;
   }
 
   if (isError) {
