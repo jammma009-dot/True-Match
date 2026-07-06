@@ -52,6 +52,15 @@ export async function notifyNewMessage(userId: string): Promise<void> {
   await send(user.telegramId, text, openAppButton(locale, "bot.newMessage.openButton"));
 }
 
+/** Notify a user that someone liked their profile (identity not revealed). */
+export async function notifyNewLike(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+  const locale = user.language as Locale;
+  const text = `*${t(locale, "bot.newLike.title")}*\n\n${t(locale, "bot.newLike.body")}`;
+  await send(user.telegramId, text, openAppButton(locale, "bot.newLike.openButton"));
+}
+
 /** Notify a user their profile was approved. */
 export async function notifyApproved(userId: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId } });

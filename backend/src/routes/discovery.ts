@@ -54,11 +54,20 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 
   const scope = req.query.scope === "nearby" ? "nearby" : "foryou";
 
+  // Age filter → birthdate range. Defaults 18–99, clamped.
+  const minAge = Math.max(18, parseInt(String(req.query.minAge ?? "18"), 10) || 18);
+  const maxAge = Math.min(99, Math.max(minAge, parseInt(String(req.query.maxAge ?? "99"), 10) || 99));
+  const now = new Date();
+  // Youngest allowed → latest birthdate; oldest allowed → earliest birthdate.
+  const maxBirth = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
+  const minBirth = new Date(now.getFullYear() - maxAge - 1, now.getMonth(), now.getDate());
+
   const baseWhere = {
     status: "approved" as const,
     gender: oppositeGender,
     user: { isBanned: false },
     userId: { notIn: Array.from(excludeIds) },
+    birthdate: { gte: minBirth, lte: maxBirth },
   };
   const include = { photos: true, user: { select: { id: true } } };
 

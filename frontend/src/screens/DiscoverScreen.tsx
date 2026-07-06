@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler, SlidersHorizontal } from "lucide-react";
 import { api, PublicProfile, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { LogoHeader } from "../components/LogoHeader";
+import { FilterModal } from "../components/FilterModal";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -17,10 +18,14 @@ export function DiscoverScreen({
   onMatch: (m: MatchListItem) => void;
 }) {
   const t = useT();
+  const queryClient = useQueryClient();
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
+  const [minAge, setMinAge] = useState(18);
+  const [maxAge, setMaxAge] = useState(80);
+  const [showFilter, setShowFilter] = useState(false);
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["discovery", feedTab],
-    queryFn: () => api.getDiscovery(feedTab),
+    queryKey: ["discovery", feedTab, minAge, maxAge],
+    queryFn: () => api.getDiscovery({ scope: feedTab, minAge, maxAge }),
   });
 
   const [queue, setQueue] = useState<PublicProfile[]>([]);
@@ -84,7 +89,11 @@ export function DiscoverScreen({
           });
         }
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        // If they liked back someone who liked them, refresh the Likes list.
+        queryClient.invalidateQueries({ queryKey: ["likes"] });
+      });
 
     window.setTimeout(() => {
       advance();
@@ -327,6 +336,17 @@ export function DiscoverScreen({
         </div>
       </div>
 
+      {/* Filter button (right-center) */}
+      <button
+        type="button"
+        onClick={() => setShowFilter(true)}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label="filters"
+        className="absolute right-2 top-1/2 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur active:scale-90"
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+      </button>
+
       {/* Action bar — white pill (pass) · dark circle (gift) · pink pill (like) */}
       <div className="absolute inset-x-0 bottom-6 z-40 flex items-center gap-3 px-5">
         <button
@@ -371,6 +391,19 @@ export function DiscoverScreen({
             setReportFor(null);
             advance();
           }}
+        />
+      )}
+
+      {showFilter && (
+        <FilterModal
+          initial={{ minAge, maxAge, scope: feedTab }}
+          onApply={(f) => {
+            setFeedTab(f.scope);
+            setMinAge(f.minAge);
+            setMaxAge(f.maxAge);
+            setShowFilter(false);
+          }}
+          onClose={() => setShowFilter(false)}
         />
       )}
     </div>

@@ -78,6 +78,8 @@ model User {
   // Whether the user currently has the Mini App open (for chat notification routing)
   isOnline   Boolean  @default(false)
   lastSeenAt DateTime @default(now())
+  // Last time the user opened their "Likes" page (for the new-likes badge).
+  lastLikesSeenAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

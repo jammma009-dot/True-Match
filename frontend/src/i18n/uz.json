@@ -81,7 +81,15 @@
   "chat.blocked": "Bu foydalanuvchi bloklangan.",
 
   "likes.title": "Layklar",
+  "likes.subtitle": "Sizni yoqtirganlar",
+  "likes.empty": "Hozircha sizni hech kim yoqtirmadi. Profilingizni to'ldiring!",
   "likes.comingSoon": "Sizni yoqtirganlar tez orada shu yerda ko'rinadi.",
+  "filter.title": "Filtr",
+  "filter.age": "Yosh",
+  "filter.city": "Shahar",
+  "filter.allCities": "Barcha shaharlar",
+  "filter.nearby": "Yaqin atrofda",
+  "filter.apply": "Qo'llash",
 
   "profile.title": "Mening profilim",
   "profile.status.pending": "Tekshiruvda",

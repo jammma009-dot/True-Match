@@ -34,6 +34,27 @@ export function MainApp() {
     matchesData?.matches.filter((m) => m.seen === false || (m.unread ?? 0) > 0)
       .length ?? 0;
 
+  // New incoming likes drive the Likes tab badge.
+  const { data: likesData } = useQuery({
+    queryKey: ["likes"],
+    queryFn: api.getLikes,
+    refetchInterval: 30000,
+  });
+  const likesBadge = likesData?.newCount ?? 0;
+
+  const selectTab = useCallback(
+    (next: Tab) => {
+      setTab(next);
+      if (next === "likes") {
+        void api
+          .markLikesSeen()
+          .catch(() => undefined)
+          .finally(() => queryClient.invalidateQueries({ queryKey: ["likes"] }));
+      }
+    },
+    [queryClient],
+  );
+
   // Track matches whose celebration we've already popped this session.
   const shownMatchIds = useRef<Set<string>>(new Set());
 
@@ -67,8 +88,13 @@ export function MainApp() {
       // Refresh matches so the unread badge + previews stay live.
       queryClient.invalidateQueries({ queryKey: ["matches"] });
     };
+    const onLike = () => {
+      haptics.impact("light");
+      queryClient.invalidateQueries({ queryKey: ["likes"] });
+    };
     socket.on("match:new", onMatch);
     socket.on("message:new", onMessage);
+    socket.on("like:new", onLike);
 
     const onHidden = () => {
       void api.setPresence(!document.hidden).catch(() => undefined);
@@ -78,6 +104,7 @@ export function MainApp() {
     return () => {
       socket.off("match:new", onMatch);
       socket.off("message:new", onMessage);
+      socket.off("like:new", onLike);
       document.removeEventListener("visibilitychange", onHidden);
       void api.setPresence(false).catch(() => undefined);
       disconnectSocket();
@@ -147,8 +174,8 @@ export function MainApp() {
       </main>
       <BottomNav
         active={tab}
-        onChange={setTab}
-        badges={{ chats: badgeCount }}
+        onChange={selectTab}
+        badges={{ chats: badgeCount, likes: likesBadge }}
       />
       {matchModal}
     </div>

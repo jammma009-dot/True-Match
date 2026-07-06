@@ -14,6 +14,7 @@ import photosRouter from "./routes/photos";
 import discoveryRouter from "./routes/discovery";
 import swipeRouter from "./routes/swipe";
 import matchesRouter from "./routes/matches";
+import likesRouter from "./routes/likes";
 import safetyRouter from "./routes/safety";
 import adminRouter from "./routes/admin";
 
@@ -55,6 +56,7 @@ async function main(): Promise<void> {
   app.use("/api/discovery", discoveryRouter);
   app.use("/api/swipe", swipeRouter);
   app.use("/api/matches", matchesRouter);
+  app.use("/api/likes", likesRouter);
   app.use("/api", safetyRouter); // /api/report, /api/block, /api/unblock
   app.use("/api/admin", adminRouter);
 

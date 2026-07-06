@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { checkAndIncrSwipe } from "../lib/ratelimit";
-import { notifyNewMatch } from "../bot/notify";
+import { notifyNewMatch, notifyNewLike } from "../bot/notify";
 import { emitToUser } from "../socket";
 import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
@@ -166,6 +166,11 @@ router.post(
             lastMessage: null,
           });
         }
+      } else if (!reciprocal) {
+        // Not a mutual like (and the target hasn't acted on me yet):
+        // tell them someone liked their profile (identity kept private).
+        void notifyNewLike(targetUserId);
+        emitToUser(targetUserId, "like:new", { at: new Date().toISOString() });
       }
     }
 

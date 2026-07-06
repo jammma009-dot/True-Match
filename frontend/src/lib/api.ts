@@ -143,8 +143,23 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  getDiscovery: (scope: "foryou" | "nearby" = "foryou") =>
-    request<{ queue: PublicProfile[] }>(`/api/discovery?scope=${scope}`),
+  getDiscovery: (opts?: {
+    scope?: "foryou" | "nearby";
+    minAge?: number;
+    maxAge?: number;
+  }) => {
+    const p = new URLSearchParams();
+    p.set("scope", opts?.scope ?? "foryou");
+    if (opts?.minAge) p.set("minAge", String(opts.minAge));
+    if (opts?.maxAge) p.set("maxAge", String(opts.maxAge));
+    return request<{ queue: PublicProfile[] }>(`/api/discovery?${p.toString()}`);
+  },
+
+  getLikes: () =>
+    request<{ likes: PublicProfile[]; newCount: number }>("/api/likes"),
+
+  markLikesSeen: () =>
+    request<{ ok: true }>("/api/likes/seen", { method: "POST", body: "{}" }),
 
   swipe: (targetUserId: string, action: "like" | "pass") =>
     request<{ ok: true; matched: boolean; matchId: string | null; remaining: number }>(

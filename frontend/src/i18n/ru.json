@@ -81,7 +81,15 @@
   "chat.blocked": "Этот пользователь заблокирован.",
 
   "likes.title": "Лайки",
+  "likes.subtitle": "Кто вас лайкнул",
+  "likes.empty": "Пока вас никто не лайкнул. Заполните профиль!",
   "likes.comingSoon": "Те, кто вас лайкнул, скоро появятся здесь.",
+  "filter.title": "Фильтр",
+  "filter.age": "Возраст",
+  "filter.city": "Город",
+  "filter.allCities": "Все города",
+  "filter.nearby": "Рядом",
+  "filter.apply": "Применить",
 
   "profile.title": "Мой профиль",
   "profile.status.pending": "На проверке",
