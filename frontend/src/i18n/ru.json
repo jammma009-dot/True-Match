@@ -87,6 +87,8 @@
 
   "chat.placeholder": "Напишите сообщение...",
   "chat.openTelegram": "Telegram",
+  "profileView.title": "Профиль",
+  "profileView.message": "Написать",
   "chat.report": "Пожаловаться",
   "chat.block": "Заблокировать",
   "chat.blocked": "Этот пользователь заблокирован.",

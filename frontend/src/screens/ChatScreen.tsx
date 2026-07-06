@@ -7,6 +7,8 @@ import { getSocket } from "../lib/socket";
 import { showBackButton, hideBackButton, haptics, openTelegramLink } from "../lib/telegram";
 import { Spinner } from "../components/ui";
 import { ReportBlockModal } from "../components/ReportBlockModal";
+import { MatchProfileView } from "../components/MatchProfileView";
+import { PremiumBadge } from "../components/PremiumBadge";
 
 export function ChatScreen({
   match,
@@ -21,6 +23,7 @@ export function ChatScreen({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [showReport, setShowReport] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -36,11 +39,13 @@ export function ChatScreen({
     }
   }, [data, queryClient]);
 
-  // Telegram back button returns to the matches list.
+  // Telegram back button: closes the profile view if open, else returns to the
+  // matches list.
   useEffect(() => {
-    showBackButton(onBack);
+    if (showProfile) showBackButton(() => setShowProfile(false));
+    else showBackButton(onBack);
     return () => hideBackButton();
-  }, [onBack]);
+  }, [onBack, showProfile]);
 
   // Socket: tell the server this chat is open (so it won't send a redundant
   // Telegram notification) and listen for incoming messages.
@@ -106,16 +111,30 @@ export function ChatScreen({
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <div className="h-10 w-10 overflow-hidden rounded-full bg-black/20">
-          {match.user?.photo ? (
-            <img src={match.user.photo} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">👤</div>
-          )}
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold text-tg">{match.user?.name ?? "—"}</p>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            haptics.impact("light");
+            setShowProfile(true);
+          }}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left active:opacity-70"
+        >
+          <div
+            className={`h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-black/20 ${
+              match.user?.isPremium ? "ring-2 ring-amber-400" : ""
+            }`}
+          >
+            {match.user?.photo ? (
+              <img src={match.user.photo} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">👤</div>
+            )}
+          </div>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="truncate font-semibold text-tg">{match.user?.name ?? "—"}</p>
+            {match.user?.isPremium && <PremiumBadge />}
+          </div>
+        </button>
         {/* Premium perk: jump straight to their Telegram (username revealed only
             to Premium users by the backend). */}
         {match.user?.telegramUsername && (
@@ -192,6 +211,13 @@ export function ChatScreen({
           targetUserId={match.user.userId}
           onClose={() => setShowReport(false)}
           onDone={onBack}
+        />
+      )}
+
+      {showProfile && (
+        <MatchProfileView
+          matchId={match.matchId}
+          onClose={() => setShowProfile(false)}
         />
       )}
     </div>

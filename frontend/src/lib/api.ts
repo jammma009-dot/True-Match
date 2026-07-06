@@ -94,6 +94,7 @@ export interface MatchListItem {
     city: string;
     cityLabel: string;
     photo: string | null;
+    isPremium?: boolean;
     telegramUsername?: string | null;
   } | null;
   lastMessage: {
@@ -201,6 +202,9 @@ export const api = {
 
   getMessages: (matchId: string) =>
     request<{ messages: ChatMessage[] }>(`/api/matches/${matchId}/messages`),
+
+  getMatchProfile: (matchId: string) =>
+    request<{ profile: PublicProfile }>(`/api/matches/${matchId}/profile`),
 
   markRead: (matchId: string) =>
     request<{ ok: true }>(`/api/matches/${matchId}/read`, {

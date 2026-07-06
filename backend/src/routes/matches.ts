@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
+import { toPublicProfile } from "../utils/serialize";
 import { createMessage } from "../services/messages";
 import { notifyNewMessage } from "../bot/notify";
 import { emitToUser, isUserViewingChat } from "../socket";
@@ -59,6 +60,8 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
               city: profile.city,
               cityLabel: cityLabel(profile.city),
               photo: firstPhoto?.url ?? null,
+              // Premium status is public so premium users stand out everywhere.
+              isPremium: isPremiumActive(other?.premiumUntil ?? null),
               // Only exposed to Premium requesters (and only if they have one).
               telegramUsername: requesterPremium ? other?.username ?? null : null,
             }
@@ -95,6 +98,29 @@ router.post("/:matchId/seen", requireAuth, async (req: Request, res: Response) =
     data: match.userAId === user.id ? { seenA: true } : { seenB: true },
   });
   res.json({ ok: true });
+});
+
+/**
+ * GET /api/matches/:matchId/profile — full public profile of the matched
+ * person (for the "View profile" screen opened from the chat).
+ */
+router.get("/:matchId/profile", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+  const match = await getMemberMatch(req.params.matchId, user.id);
+  if (!match) {
+    res.status(404).json({ error: "match_not_found" });
+    return;
+  }
+  const otherId = match.userAId === user.id ? match.userBId : match.userAId;
+  const other = await prisma.user.findUnique({
+    where: { id: otherId },
+    include: { profile: { include: { photos: true } } },
+  });
+  if (!other || !other.profile) {
+    res.status(404).json({ error: "profile_not_found" });
+    return;
+  }
+  res.json({ profile: toPublicProfile(other, other.profile, other.profile.photos) });
 });
 
 /**

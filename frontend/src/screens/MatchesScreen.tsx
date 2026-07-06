@@ -5,6 +5,7 @@ import { useT } from "../store/useStore";
 import { Spinner } from "../components/ui";
 import { haptics } from "../lib/telegram";
 import { LogoHeader } from "../components/LogoHeader";
+import { PremiumBadge } from "../components/PremiumBadge";
 
 export function MatchesScreen({
   onOpenChat,
@@ -42,9 +43,17 @@ export function MatchesScreen({
                 haptics.select();
                 onOpenChat(m);
               }}
-              className="flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] p-3 text-left"
+              className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left ${
+                m.user?.isPremium
+                  ? "border border-amber-400/40 bg-gradient-to-r from-amber-400/10 to-[var(--tg-secondary-bg-color)]"
+                  : "bg-[var(--tg-secondary-bg-color)]"
+              }`}
             >
-              <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-black/20">
+              <div
+                className={`h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-black/20 ${
+                  m.user?.isPremium ? "ring-2 ring-amber-400" : ""
+                }`}
+              >
                 {m.user?.photo ? (
                   <img src={m.user.photo} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -52,11 +61,12 @@ export function MatchesScreen({
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="truncate font-semibold text-tg">
                     {m.user?.name ?? "—"}
                   </span>
                   {m.user && <span className="text-sm text-tg-hint">{m.user.age}</span>}
+                  {m.user?.isPremium && <PremiumBadge />}
                 </div>
                 <p className={`truncate text-sm ${m.lastMessage ? "text-tg-hint" : "font-medium text-brand"}`}>
                   {m.lastMessage ? m.lastMessage.body : t("matches.newMatchLabel")}
