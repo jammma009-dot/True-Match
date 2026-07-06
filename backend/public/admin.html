@@ -45,7 +45,11 @@
           <button id="tab-pending" class="active" onclick="showTab('pending')">Pending profiles</button>
           <button id="tab-reports" onclick="showTab('reports')">Reports</button>
         </div>
-        <div style="margin-left:auto"><button class="primary" onclick="logout()">Logout</button></div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="primary" style="background:#2ecc71" onclick="seedSamples()">Load sample profiles</button>
+          <button class="primary" style="background:#555" onclick="removeSamples()">Remove samples</button>
+          <button class="primary" onclick="logout()">Logout</button>
+        </div>
       </header>
       <main>
         <div id="pending"></div>
@@ -144,6 +148,16 @@
 
       function escapeHtml(s) {
         return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+
+      async function seedSamples() {
+        const res = await api("/api/admin/seed", { method: "POST", body: "{}" });
+        alert("Loaded " + res.count + " sample profiles. Open the app to swipe them!");
+      }
+      async function removeSamples() {
+        if (!confirm("Remove all sample/test profiles?")) return;
+        const res = await api("/api/admin/seed/remove", { method: "POST", body: "{}" });
+        alert("Removed " + res.removed + " sample profiles.");
       }
 
       function init() {

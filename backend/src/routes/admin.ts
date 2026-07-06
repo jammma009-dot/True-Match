@@ -6,11 +6,29 @@ import { validateBody } from "../middleware/validate";
 import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected } from "../bot/notify";
+import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 
 const router = Router();
 
 // All admin routes require the admin password.
 router.use(requireAdmin);
+
+/**
+ * POST /api/admin/seed — load ~12 sample/test profiles into the feed.
+ * Idempotent. Handy for testing the discovery/swipe screen without real users.
+ */
+router.post("/seed", async (_req: Request, res: Response) => {
+  const count = await createSampleProfiles();
+  res.json({ ok: true, count });
+});
+
+/**
+ * POST /api/admin/seed/remove — delete all sample/test profiles.
+ */
+router.post("/seed/remove", async (_req: Request, res: Response) => {
+  const count = await removeSampleProfiles();
+  res.json({ ok: true, removed: count });
+});
 
 /**
  * GET /api/admin/pending — pending profiles queue.
