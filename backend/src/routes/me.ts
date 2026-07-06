@@ -26,6 +26,19 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     include: { photos: true },
   });
 
+  // Profile stats for the profile header.
+  const [views, likes, matches] = await Promise.all([
+    prisma.swipe.count({ where: { toUserId: user.id } }),
+    prisma.swipe.count({ where: { toUserId: user.id, action: "like" } }),
+    prisma.match.count({
+      where: { OR: [{ userAId: user.id }, { userBId: user.id }] },
+    }),
+  ]);
+  const days = Math.max(
+    1,
+    Math.floor((Date.now() - user.createdAt.getTime()) / 86_400_000) + 1,
+  );
+
   res.json({
     user: {
       id: user.id,
@@ -33,6 +46,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       isBanned: user.isBanned,
     },
     profile: profile ? toOwnProfile(profile, profile.photos) : null,
+    stats: { views, likes, matches, days },
     reference: {
       cities: CITIES,
       intents: ["serious", "marriage", "flirt", "friendship", "unsure"],

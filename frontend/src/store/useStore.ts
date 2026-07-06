@@ -31,6 +31,7 @@ export interface CityRef {
 export interface MeResponse {
   user: { id: string; language: Locale; isBanned: boolean };
   profile: OwnProfile | null;
+  stats?: { views: number; likes: number; matches: number; days: number };
   reference: {
     cities: CityRef[];
     intents: string[];
