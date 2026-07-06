@@ -59,8 +59,9 @@ export function VerificationModal({
           <p className="mt-1 max-w-xs text-sm text-tg-hint">{t("verify.subtitle")}</p>
         </div>
 
-        {/* Illustrated example: face + two fingers */}
-        <div className="mx-auto mt-5 w-40">
+        {/* Example photo: person holding up two fingers. Falls back to a simple
+            illustration if the image asset isn't present. */}
+        <div className="mx-auto mt-5 w-44">
           <SelfieExample />
           <p className="mt-2 text-center text-xs text-tg-hint">{t("verify.example")}</p>
         </div>
@@ -94,8 +95,20 @@ export function VerificationModal({
   );
 }
 
-/** Simple illustration of a person holding up two fingers (the required pose). */
+/** Real example photo (person holding up two fingers); falls back to an
+ * illustration if the asset is missing. */
 function SelfieExample() {
+  const [failed, setFailed] = useState(false);
+  if (!failed) {
+    return (
+      <img
+        src="/verify-example.jpg"
+        alt="example"
+        className="w-full rounded-2xl border border-white/10 object-cover"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
   return (
     <svg viewBox="0 0 200 210" className="w-full" aria-hidden="true">
       {/* phone / photo frame */}
