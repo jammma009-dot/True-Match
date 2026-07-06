@@ -4,13 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Brand accent
+        // Brand accent — warm romantic pink→orange (dating-app style).
+        // `from-brand to-brand-dark` produces the signature pink→orange gradient.
         brand: {
-          DEFAULT: "#6d5efc",
-          dark: "#5646e0",
+          DEFAULT: "#fd267a",
+          dark: "#ff6036",
         },
         like: "#2ecc71",
-        pass: "#e74c3c",
+        pass: "#ff4458",
       },
       // Bind to Telegram theme params via CSS variables (set in telegram.ts)
       backgroundColor: {

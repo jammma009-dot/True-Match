@@ -19,7 +19,7 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(1100px 520px at 50% -12%, rgba(109, 94, 252, 0.16), transparent 62%),
+    radial-gradient(1100px 520px at 50% -12%, rgba(253, 38, 122, 0.18), transparent 62%),
     var(--tg-bg-color);
   color: var(--tg-text-color);
   -webkit-tap-highlight-color: transparent;
