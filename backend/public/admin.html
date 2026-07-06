@@ -28,6 +28,20 @@
       .actions button { color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
       .empty { color: #777; padding: 40px; text-align: center; }
       .tag { background: #26262e; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+      select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #1c1c22; color: #fff; margin: 6px 0; }
+      label { display: block; font-size: 13px; color: #9a9aa5; margin-top: 10px; }
+      .btn-edit { background: #3a7bd5; }
+      .btn-delete { background: #b71c1c; }
+      .btn-unban { background: #2ecc71; }
+      .badge-banned { background: #e74c3c; }
+      .badge-approved { background: #2ecc71; }
+      .badge-pending { background: #f39c12; }
+      .badge-rejected { background: #e74c3c; }
+      .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 50; }
+      .modal { background: #17171c; border: 1px solid #26262e; border-radius: 12px; padding: 20px; width: 92%; max-width: 420px; max-height: 90vh; overflow: auto; }
+      .modal h2 { margin: 0 0 12px; font-size: 18px; }
+      .searchbar { display: flex; gap: 8px; margin-bottom: 16px; }
+      .searchbar input { margin: 0; }
     </style>
   </head>
   <body>
@@ -44,6 +58,7 @@
         <div class="tabs">
           <button id="tab-pending" class="active" onclick="showTab('pending')">Pending profiles</button>
           <button id="tab-reports" onclick="showTab('reports')">Reports</button>
+          <button id="tab-users" onclick="showTab('users')">All users</button>
         </div>
         <div style="margin-left:auto; display:flex; gap:8px;">
           <button class="primary" style="background:#2ecc71" onclick="seedSamples()">Load sample profiles</button>
@@ -54,7 +69,60 @@
       <main>
         <div id="pending"></div>
         <div id="reports" style="display:none"></div>
+        <div id="users" style="display:none"></div>
       </main>
+    </div>
+
+    <!-- Edit user modal -->
+    <div id="editModal" class="modal-overlay" style="display:none">
+      <div class="modal">
+        <h2>Edit user</h2>
+        <input type="hidden" id="edit-userId" />
+        <label>Name</label>
+        <input id="edit-name" type="text" />
+        <label>Birthdate (YYYY-MM-DD)</label>
+        <input id="edit-birthdate" type="date" />
+        <label>Gender</label>
+        <select id="edit-gender">
+          <option value="male">male</option>
+          <option value="female">female</option>
+        </select>
+        <label>Looking for</label>
+        <select id="edit-intent">
+          <option value="serious">serious</option>
+          <option value="marriage">marriage</option>
+          <option value="flirt">flirt</option>
+          <option value="friendship">friendship</option>
+          <option value="unsure">unsure</option>
+        </select>
+        <label>City</label>
+        <select id="edit-city">
+          <option value="toshkent">Toshkent</option>
+          <option value="nukus">Nukus</option>
+          <option value="andijon">Andijon</option>
+          <option value="buxoro">Buxoro</option>
+          <option value="jizzax">Jizzax</option>
+          <option value="qarshi">Qarshi</option>
+          <option value="navoiy">Navoiy</option>
+          <option value="namangan">Namangan</option>
+          <option value="samarqand">Samarqand</option>
+          <option value="termiz">Termiz</option>
+          <option value="guliston">Guliston</option>
+          <option value="nurafshon">Nurafshon</option>
+          <option value="fargona">Farg'ona</option>
+          <option value="urganch">Urganch</option>
+        </select>
+        <label>Status</label>
+        <select id="edit-status">
+          <option value="pending">pending</option>
+          <option value="approved">approved</option>
+          <option value="rejected">rejected</option>
+        </select>
+        <div class="actions" style="margin-top:16px">
+          <button class="primary" onclick="saveUser()">Save</button>
+          <button class="btn-dismiss" style="color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer" onclick="closeEdit()">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -85,12 +153,15 @@
         document.getElementById("login").style.display = "block";
       }
 
+      const TABS = ["pending", "reports", "users"];
       function showTab(tab) {
-        document.getElementById("pending").style.display = tab === "pending" ? "block" : "none";
-        document.getElementById("reports").style.display = tab === "reports" ? "block" : "none";
-        document.getElementById("tab-pending").classList.toggle("active", tab === "pending");
-        document.getElementById("tab-reports").classList.toggle("active", tab === "reports");
-        if (tab === "pending") loadPending(); else loadReports();
+        TABS.forEach((t) => {
+          document.getElementById(t).style.display = t === tab ? "block" : "none";
+          document.getElementById("tab-" + t).classList.toggle("active", t === tab);
+        });
+        if (tab === "pending") loadPending();
+        else if (tab === "reports") loadReports();
+        else loadUsers();
       }
 
       async function loadPending() {
@@ -144,6 +215,108 @@
       async function dismiss(id) {
         await api(`/api/admin/reports/${id}/dismiss`, { method: "POST", body: "{}" });
         loadReports();
+      }
+
+      // ---------- All users tab ----------
+      let usersCache = [];
+      let userSearch = "";
+
+      async function loadUsers() {
+        const el = document.getElementById("users");
+        el.innerHTML = "Loading...";
+        const query = userSearch ? ("?q=" + encodeURIComponent(userSearch)) : "";
+        const { users } = await api("/api/admin/users" + query);
+        usersCache = users;
+        const bar = `
+          <div class="searchbar">
+            <input id="userSearchInput" type="text" placeholder="Search by name..." value="${escapeHtml(userSearch)}" />
+            <button class="primary" onclick="doUserSearch()">Search</button>
+          </div>`;
+        if (!users.length) { el.innerHTML = bar + '<div class="empty">No users found</div>'; return; }
+        el.innerHTML = bar + users.map(renderUser).join("");
+      }
+
+      function doUserSearch() {
+        userSearch = document.getElementById("userSearchInput").value.trim();
+        loadUsers();
+      }
+
+      function renderUser(u) {
+        const p = u.profile;
+        const statusBadge = p
+          ? `<span class="tag badge-${p.status}">${p.status}</span>`
+          : '<span class="tag">no profile</span>';
+        const banned = u.isBanned ? '<span class="tag badge-banned">BANNED</span>' : "";
+        const photos = p && p.photos.length
+          ? `<div class="photos">${p.photos.map(url => `<img src="${url}" onerror="this.style.opacity=0.2"/>`).join("")}</div>`
+          : "";
+        const info = p
+          ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned}`
+          : `<strong class="meta">(no profile — only /start)</strong> ${banned}`;
+        const banBtn = u.isBanned
+          ? `<button class="btn-unban" onclick="unbanUser('${u.userId}')">Unban</button>`
+          : `<button class="btn-ban" onclick="banUser('${u.userId}')">Ban</button>`;
+        const editBtn = p ? `<button class="btn-edit" onclick="openEdit('${u.userId}')">Edit</button>` : "";
+        return `
+          <div class="card">
+            <div class="row">${info}</div>
+            <div class="meta" style="margin-top:4px">Telegram ID: ${u.telegramId}</div>
+            ${photos}
+            <div class="actions">
+              ${editBtn}
+              ${banBtn}
+              <button class="btn-delete" onclick="deleteUser('${u.userId}')">Delete</button>
+            </div>
+          </div>`;
+      }
+
+      function openEdit(userId) {
+        const u = usersCache.find(x => x.userId === userId);
+        if (!u || !u.profile) return;
+        const p = u.profile;
+        document.getElementById("edit-userId").value = userId;
+        document.getElementById("edit-name").value = p.name;
+        document.getElementById("edit-birthdate").value = p.birthdate;
+        document.getElementById("edit-gender").value = p.gender;
+        document.getElementById("edit-intent").value = p.intent;
+        document.getElementById("edit-city").value = p.city;
+        document.getElementById("edit-status").value = p.status;
+        document.getElementById("editModal").style.display = "flex";
+      }
+
+      function closeEdit() {
+        document.getElementById("editModal").style.display = "none";
+      }
+
+      async function saveUser() {
+        const userId = document.getElementById("edit-userId").value;
+        const body = {
+          name: document.getElementById("edit-name").value.trim(),
+          birthdate: document.getElementById("edit-birthdate").value,
+          gender: document.getElementById("edit-gender").value,
+          intent: document.getElementById("edit-intent").value,
+          city: document.getElementById("edit-city").value,
+          status: document.getElementById("edit-status").value,
+        };
+        const res = await api(`/api/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(body) });
+        if (res.error) { alert("Error: " + res.error + (res.minAge ? " (min age " + res.minAge + ")" : "")); return; }
+        closeEdit();
+        loadUsers();
+      }
+
+      async function banUser(userId) {
+        if (!confirm("Ban this user? They won't be able to use the app.")) return;
+        await api(`/api/admin/users/${userId}/ban`, { method: "POST", body: "{}" });
+        loadUsers();
+      }
+      async function unbanUser(userId) {
+        await api(`/api/admin/users/${userId}/unban`, { method: "POST", body: "{}" });
+        loadUsers();
+      }
+      async function deleteUser(userId) {
+        if (!confirm("PERMANENTLY delete this user and all their data? This cannot be undone.")) return;
+        await api(`/api/admin/users/${userId}`, { method: "DELETE" });
+        loadUsers();
       }
 
       function escapeHtml(s) {

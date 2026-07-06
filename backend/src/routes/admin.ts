@@ -3,10 +3,11 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../middleware/admin";
 import { validateBody } from "../middleware/validate";
-import { computeAge } from "../utils/age";
+import { computeAge, isAdult, MIN_AGE } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
+import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -165,6 +166,162 @@ router.post("/reports/:id/dismiss", async (req: Request, res: Response) => {
     where: { id: req.params.id },
     data: { resolved: true },
   });
+  res.json({ ok: true });
+});
+
+// ---------- User management ----------
+
+/**
+ * GET /api/admin/users?q=&status=  — list all users with their profile summary.
+ * Supports optional name search (?q=) and status filter (?status=).
+ */
+router.get("/users", async (req: Request, res: Response) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const status =
+    typeof req.query.status === "string" ? req.query.status : undefined;
+
+  // Build a single nested `profile` filter so search + status combine correctly.
+  const profileFilter: Prisma.ProfileWhereInput = {};
+  if (q) profileFilter.name = { contains: q, mode: "insensitive" };
+  if (status && ["pending", "approved", "rejected"].includes(status)) {
+    profileFilter.status = status as ProfileStatus;
+  }
+
+  const users = await prisma.user.findMany({
+    where:
+      Object.keys(profileFilter).length > 0
+        ? { profile: profileFilter }
+        : {},
+    include: { profile: { include: { photos: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+
+  res.json({
+    users: users.map((u) => ({
+      userId: u.id,
+      telegramId: u.telegramId.toString(),
+      language: u.language,
+      isBanned: u.isBanned,
+      createdAt: u.createdAt.toISOString(),
+      profile: u.profile
+        ? {
+            name: u.profile.name,
+            age: computeAge(u.profile.birthdate),
+            birthdate: u.profile.birthdate.toISOString().slice(0, 10),
+            gender: u.profile.gender,
+            intent: u.profile.intent,
+            city: u.profile.city,
+            cityLabel: cityLabel(u.profile.city),
+            status: u.profile.status,
+            photos: u.profile.photos
+              .sort((a, b) => a.position - b.position)
+              .map((ph) => ph.url),
+          }
+        : null,
+    })),
+  });
+});
+
+/**
+ * PATCH /api/admin/users/:userId — edit a user's profile fields.
+ * Admin can override anything (including gender, even after approval).
+ */
+const editSchema = z.object({
+  name: z.string().trim().min(1).max(50).optional(),
+  birthdate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "birthdate must be YYYY-MM-DD")
+    .optional(),
+  gender: z.nativeEnum(Gender).optional(),
+  intent: z.nativeEnum(Intent).optional(),
+  city: z.nativeEnum(City).optional(),
+  status: z.nativeEnum(ProfileStatus).optional(),
+  rejectionReason: z.string().trim().max(300).optional(),
+});
+
+router.patch(
+  "/users/:userId",
+  validateBody(editSchema),
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const data = req.body as z.infer<typeof editSchema>;
+
+    const profile = await prisma.profile.findUnique({ where: { userId } });
+    if (!profile) {
+      res.status(404).json({ error: "profile_not_found" });
+      return;
+    }
+
+    const update: Record<string, unknown> = {};
+    if (data.name !== undefined) update.name = data.name;
+    if (data.gender !== undefined) update.gender = data.gender;
+    if (data.intent !== undefined) update.intent = data.intent;
+    if (data.city !== undefined) update.city = data.city;
+
+    if (data.birthdate !== undefined) {
+      const bd = new Date(`${data.birthdate}T00:00:00.000Z`);
+      if (isNaN(bd.getTime())) {
+        res.status(400).json({ error: "invalid_birthdate" });
+        return;
+      }
+      if (!isAdult(bd)) {
+        res.status(400).json({ error: "underage", minAge: MIN_AGE });
+        return;
+      }
+      update.birthdate = bd;
+    }
+
+    let notify: null | "approved" | "rejected" = null;
+    if (data.status !== undefined && data.status !== profile.status) {
+      update.status = data.status;
+      if (data.status === "approved") {
+        update.genderLocked = true;
+        update.rejectionReason = null;
+        notify = "approved";
+      } else if (data.status === "rejected") {
+        update.rejectionReason = data.rejectionReason ?? null;
+        notify = "rejected";
+      }
+    } else if (data.rejectionReason !== undefined) {
+      update.rejectionReason = data.rejectionReason;
+    }
+
+    await prisma.profile.update({ where: { userId }, data: update });
+
+    if (notify === "approved") void notifyApproved(userId);
+    if (notify === "rejected") void notifyRejected(userId);
+
+    res.json({ ok: true });
+  },
+);
+
+/**
+ * POST /api/admin/users/:userId/unban — reactivate a banned account.
+ */
+router.post("/users/:userId/unban", async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    res.status(404).json({ error: "user_not_found" });
+    return;
+  }
+  await prisma.user.update({ where: { id: userId }, data: { isBanned: false } });
+  res.json({ ok: true });
+});
+
+/**
+ * DELETE /api/admin/users/:userId — permanently delete a user and all their
+ * data (profile, photos, swipes, matches, messages, reports, blocks cascade).
+ */
+router.delete("/users/:userId", async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    res.status(404).json({ error: "user_not_found" });
+    return;
+  }
+  await prisma.user.delete({ where: { id: userId } });
   res.json({ ok: true });
 });
 
