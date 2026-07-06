@@ -76,13 +76,54 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 0 4px rgba(255, 46, 154, 0.25);
 }
 
+/* Animated pinkish gradient glows behind everything (top-left, top-right and
+   the two bottom corners), gently drifting/breathing. Sits deepest (z -3). */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 0% 0%, rgba(255, 46, 154, 0.20), transparent 60%),
+    radial-gradient(900px 520px at 100% 0%, rgba(255, 46, 154, 0.16), transparent 60%),
+    radial-gradient(1000px 620px at 100% 100%, rgba(255, 46, 154, 0.22), transparent 62%),
+    radial-gradient(1000px 620px at 0% 100%, rgba(168, 85, 247, 0.16), transparent 62%);
+  animation: auroraShift 20s ease-in-out infinite alternate;
+}
+@keyframes auroraShift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, -3%, 0) scale(1.08);
+    opacity: 0.82;
+  }
+}
+
+/* Dark dome at the very top-center — keeps the logo on its own bg color so its
+   edges never clash with the gradient. */
+.logo-dome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 170px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(300px 150px at 50% 0%, #050608 58%, rgba(5, 6, 8, 0) 100%);
+}
+
 /* Parallax star background (3 depth layers scrolling at different speeds).
-   Generated as box-shadow dots by the StarBackground component. Sits behind all
-   app content at z-index -1. */
+   Generated as box-shadow dots by the StarBackground component. Sits above the
+   gradient (z -2) but below the logo dome and app content. */
 .star-bg {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   overflow: hidden;
   pointer-events: none;
 }
