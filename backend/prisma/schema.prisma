@@ -73,6 +73,9 @@ enum Habit {
 model User {
   id         String   @id @default(cuid())
   telegramId BigInt   @unique
+  // Telegram @username (without @), captured from initData / bot. Used by the
+  // Premium "Open in Telegram" feature. May be null if the user has none.
+  username   String?
   language   Language @default(uz)
   isBanned   Boolean  @default(false)
   // Premium subscription (bought via Telegram Stars or card). Active while

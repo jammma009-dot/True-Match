@@ -86,6 +86,7 @@ export interface MatchListItem {
     city: string;
     cityLabel: string;
     photo: string | null;
+    telegramUsername?: string | null;
   } | null;
   lastMessage: {
     body: string;
@@ -175,6 +176,12 @@ export const api = {
       "/api/swipe",
       { method: "POST", body: JSON.stringify({ targetUserId, action }) },
     ),
+
+  rewind: () =>
+    request<{ ok: true; profile: PublicProfile | null }>("/api/swipe/rewind", {
+      method: "POST",
+      body: "{}",
+    }),
 
   getMatches: () => request<{ matches: MatchListItem[] }>("/api/matches"),
 

@@ -80,6 +80,7 @@
   "matches.newMatchLabel": "Новое совпадение",
 
   "chat.placeholder": "Напишите сообщение...",
+  "chat.openTelegram": "Telegram",
   "chat.report": "Пожаловаться",
   "chat.block": "Заблокировать",
   "chat.blocked": "Этот пользователь заблокирован.",

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Send, ChevronLeft } from "lucide-react";
+import { MoreVertical, Send, ChevronLeft, ExternalLink } from "lucide-react";
 import { api, ChatMessage, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { getSocket } from "../lib/socket";
-import { showBackButton, hideBackButton, haptics } from "../lib/telegram";
+import { showBackButton, hideBackButton, haptics, openTelegramLink } from "../lib/telegram";
 import { Spinner } from "../components/ui";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -116,6 +116,22 @@ export function ChatScreen({
         <div className="flex-1">
           <p className="font-semibold text-tg">{match.user?.name ?? "—"}</p>
         </div>
+        {/* Premium perk: jump straight to their Telegram (username revealed only
+            to Premium users by the backend). */}
+        {match.user?.telegramUsername && (
+          <button
+            type="button"
+            onClick={() => {
+              haptics.impact("light");
+              openTelegramLink(`https://t.me/${match.user!.telegramUsername}`);
+            }}
+            aria-label="open telegram"
+            className="flex h-9 items-center gap-1 rounded-full bg-amber-400/20 px-3 text-amber-300 active:opacity-70"
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span className="text-xs font-semibold">{t("chat.openTelegram")}</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowReport(true)}

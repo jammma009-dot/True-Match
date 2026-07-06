@@ -8,6 +8,7 @@ import { cityLabel } from "../utils/cities";
 import { createMessage } from "../services/messages";
 import { notifyNewMessage } from "../bot/notify";
 import { emitToUser, isUserViewingChat } from "../socket";
+import { isPremiumActive } from "../lib/premium";
 
 const router = Router();
 
@@ -18,6 +19,9 @@ const router = Router();
  */
 router.get("/", requireAuth, async (req: Request, res: Response) => {
   const user = req.authUser!;
+  // Premium perk: reveal the matched person's Telegram @username so they can
+  // jump straight into a Telegram chat.
+  const requesterPremium = isPremiumActive(user.premiumUntil);
 
   const matches = await prisma.match.findMany({
     where: { OR: [{ userAId: user.id }, { userBId: user.id }] },
@@ -55,6 +59,8 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
               city: profile.city,
               cityLabel: cityLabel(profile.city),
               photo: firstPhoto?.url ?? null,
+              // Only exposed to Premium requesters (and only if they have one).
+              telegramUsername: requesterPremium ? other?.username ?? null : null,
             }
           : null,
         lastMessage: lastMessage

@@ -4,6 +4,7 @@ import { useStore, useT } from "../../store/useStore";
 import { api, ApiError } from "../../lib/api";
 import { Button, ProgressBar } from "../../components/ui";
 import { showBackButton, hideBackButton, haptics } from "../../lib/telegram";
+import { ChevronLeft } from "lucide-react";
 import { DatePicker, DateValue } from "./DatePicker";
 import { CitySelect } from "./CitySelect";
 import { PhotoGrid, UploadedPhoto } from "./PhotoGrid";
@@ -125,7 +126,21 @@ export function OnboardingWizard() {
 
   return (
     <div className="flex min-h-full flex-col px-5 pb-6 pt-4">
-      <ProgressBar value={progress} />
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="back"
+          className={`-ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-tg transition-opacity active:bg-white/10 ${
+            stepIndex > 0 ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <div className="flex-1">
+          <ProgressBar value={progress} />
+        </div>
+      </div>
 
       <div className="flex-1 pt-8">
         {step === "name" && (

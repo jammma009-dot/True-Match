@@ -39,12 +39,20 @@ function openAppKeyboard(locale: Locale): InlineKeyboard {
 }
 
 /** Ensure a minimal user row exists for this Telegram ID. */
-async function ensureUser(telegramId: number, languageCode?: string) {
+async function ensureUser(
+  telegramId: number,
+  languageCode?: string,
+  username?: string,
+) {
   const id = BigInt(telegramId);
   return prisma.user.upsert({
     where: { telegramId: id },
-    update: {},
-    create: { telegramId: id, language: normalizeLocale(languageCode) },
+    update: { username: username ?? null },
+    create: {
+      telegramId: id,
+      username: username ?? null,
+      language: normalizeLocale(languageCode),
+    },
   });
 }
 
@@ -53,7 +61,7 @@ bot.command("start", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
-  await ensureUser(from.id, from.language_code);
+  await ensureUser(from.id, from.language_code, from.username);
 
   await ctx.reply(t("uz", "bot.chooseLanguage"), {
     reply_markup: languageKeyboard(),

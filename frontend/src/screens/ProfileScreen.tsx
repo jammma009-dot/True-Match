@@ -45,7 +45,10 @@ export function ProfileScreen() {
     try {
       await api.deleteProfile();
       haptics.notify("warning");
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      // Hard reload so the app boots into a clean first-run state. This makes
+      // the fresh onboarding behave exactly like a first-time launch (fixes the
+      // name field not accepting input after an in-session delete).
+      window.location.reload();
     } catch {
       setDeleting(false);
     }

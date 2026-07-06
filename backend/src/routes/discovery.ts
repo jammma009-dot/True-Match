@@ -3,7 +3,20 @@ import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { toPublicProfile } from "../utils/serialize";
 import { CITY_VALUES } from "../utils/cities";
+import { isPremiumActive } from "../lib/premium";
 import { Gender, City } from "@prisma/client";
+
+type RowWithUser = { user: { premiumUntil: Date | null } };
+
+/**
+ * Premium perk ("priority in feed" / "gift priority"): Premium profiles are
+ * surfaced before free ones, while staying shuffled within each group.
+ */
+function prioritizePremium<T extends RowWithUser>(rows: T[]): T[] {
+  const premium = shuffle(rows.filter((r) => isPremiumActive(r.user.premiumUntil)));
+  const normal = shuffle(rows.filter((r) => !isPremiumActive(r.user.premiumUntil)));
+  return [...premium, ...normal];
+}
 
 const router = Router();
 
@@ -81,13 +94,13 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
   let ordered;
 
   if (cityParam) {
-    // Only people from the chosen city.
+    // Only people from the chosen city (premium first).
     const rows = await prisma.profile.findMany({
       where: { ...baseWhere, city: cityParam },
       include,
       take: 60,
     });
-    ordered = shuffle(rows);
+    ordered = prioritizePremium(rows);
   } else {
     // Fetch same-city and other-city candidates separately so same-city people
     // are always found (not lost inside a generic slice).
@@ -103,13 +116,15 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
         take: 50,
       }),
     ]);
-    const sameCity = shuffle(sameCityRaw);
-    const otherCity = shuffle(otherCityRaw);
-    // "nearby": same-city first, then others as fallback. "foryou": full mix.
+    // Premium profiles rank first within each group.
+    const sameCity = prioritizePremium(sameCityRaw);
+    const otherCity = prioritizePremium(otherCityRaw);
+    // "nearby": same-city first, then others as fallback. "foryou": full mix
+    // but still premium-first.
     ordered =
       scope === "nearby"
         ? [...sameCity, ...otherCity]
-        : shuffle([...sameCityRaw, ...otherCityRaw]);
+        : prioritizePremium([...sameCityRaw, ...otherCityRaw]);
   }
 
   const queue = ordered

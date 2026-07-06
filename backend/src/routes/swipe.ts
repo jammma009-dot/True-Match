@@ -8,6 +8,8 @@ import { notifyNewMatch, notifyNewLike } from "../bot/notify";
 import { emitToUser } from "../socket";
 import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
+import { toPublicProfile } from "../utils/serialize";
+import { isPremiumActive, FREE_DAILY_LIKES } from "../lib/premium";
 import { SwipeAction, Prisma } from "@prisma/client";
 
 const router = Router();
@@ -100,6 +102,35 @@ router.post(
       return;
     }
 
+    // Free-tier daily LIKE cap — Premium users have unlimited likes.
+    const premium = isPremiumActive(user.premiumUntil);
+    if (action === "like" && !premium) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      // Only count NEW likes today (not a re-like of the same person).
+      const alreadyLiked = await prisma.swipe.findUnique({
+        where: {
+          fromUserId_toUserId: { fromUserId: user.id, toUserId: targetUserId },
+        },
+        select: { action: true },
+      });
+      if (!alreadyLiked || alreadyLiked.action !== "like") {
+        const likesToday = await prisma.swipe.count({
+          where: {
+            fromUserId: user.id,
+            action: "like",
+            createdAt: { gte: startOfDay },
+          },
+        });
+        if (likesToday >= FREE_DAILY_LIKES) {
+          res
+            .status(429)
+            .json({ error: "like_limit", limit: FREE_DAILY_LIKES });
+          return;
+        }
+      }
+    }
+
     // Record swipe (idempotent on the pair).
     await prisma.swipe.upsert({
       where: {
@@ -177,5 +208,49 @@ router.post(
     res.json({ ok: true, matched, matchId, remaining: rl.remaining });
   },
 );
+
+/**
+ * POST /api/swipe/rewind — PREMIUM ONLY.
+ * Undoes the user's most recent swipe. If that swipe had created a match, the
+ * match (and its messages) is removed too. Returns the rewound person's public
+ * profile so the client can re-show the card.
+ */
+router.post("/rewind", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+
+  if (!isPremiumActive(user.premiumUntil)) {
+    res.status(403).json({ error: "premium_required" });
+    return;
+  }
+
+  // Most recent swipe the user made.
+  const last = await prisma.swipe.findFirst({
+    where: { fromUserId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!last) {
+    res.status(404).json({ error: "nothing_to_rewind" });
+    return;
+  }
+
+  // If that like formed a match, drop the match (messages cascade).
+  const [a, b] = orderPair(user.id, last.toUserId);
+  await prisma.$transaction([
+    prisma.match.deleteMany({ where: { userAId: a, userBId: b } }),
+    prisma.swipe.delete({ where: { id: last.id } }),
+  ]);
+
+  // Return the rewound person's public profile (if still available).
+  const target = await prisma.profile.findUnique({
+    where: { userId: last.toUserId },
+    include: { photos: true, user: { select: { id: true, premiumUntil: true } } },
+  });
+  const profile =
+    target && target.status === "approved"
+      ? toPublicProfile(target.user, target, target.photos)
+      : null;
+
+  res.json({ ok: true, profile });
+});
 
 export default router;

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler, SlidersHorizontal } from "lucide-react";
-import { api, PublicProfile, MatchListItem } from "../lib/api";
-import { useT } from "../store/useStore";
+import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { api, ApiError, PublicProfile, MatchListItem } from "../lib/api";
+import { useStore, useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { LogoHeader } from "../components/LogoHeader";
 import { FilterModal } from "../components/FilterModal";
 import { PremiumBadge } from "../components/PremiumBadge";
+import { PremiumModal } from "../components/PremiumModal";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -20,6 +21,12 @@ export function DiscoverScreen({
 }) {
   const t = useT();
   const queryClient = useQueryClient();
+  const me = useStore((s) => s.me);
+  const isPremium = me?.user.isPremium ?? false;
+  const paymentUsername = me?.settings?.paymentUsername ?? null;
+  const priceStars = me?.settings?.premiumPriceStars ?? 250;
+  const [showPremium, setShowPremium] = useState(false);
+  const [rewinding, setRewinding] = useState(false);
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(80);
@@ -72,9 +79,11 @@ export function DiscoverScreen({
     setLeaving(action);
     haptics.impact(action === "like" ? "medium" : "light");
 
+    const swiped = current;
+
     // Fire the network call during the fly-off animation.
     api
-      .swipe(current.userId, action)
+      .swipe(swiped.userId, action)
       .then((res) => {
         if (res.matched && res.matchId) {
           haptics.notify("success");
@@ -82,18 +91,26 @@ export function DiscoverScreen({
             matchId: res.matchId,
             createdAt: new Date().toISOString(),
             user: {
-              userId: current.userId,
-              name: current.name,
-              age: current.age,
-              city: current.city,
-              cityLabel: current.cityLabel,
-              photo: current.photos[0]?.url ?? null,
+              userId: swiped.userId,
+              name: swiped.name,
+              age: swiped.age,
+              city: swiped.city,
+              cityLabel: swiped.cityLabel,
+              photo: swiped.photos[0]?.url ?? null,
             },
             lastMessage: null,
           });
         }
       })
-      .catch(() => undefined)
+      .catch((err) => {
+        // Free daily-like cap reached → prompt to upgrade. The like was NOT
+        // recorded server-side, so refetching brings the person back.
+        if (err instanceof ApiError && err.code === "like_limit") {
+          haptics.notify("warning");
+          setShowPremium(true);
+          refetch();
+        }
+      })
       .finally(() => {
         // If they liked back someone who liked them, refresh the Likes list.
         queryClient.invalidateQueries({ queryKey: ["likes"] });
@@ -105,6 +122,37 @@ export function DiscoverScreen({
       setDrag({ x: 0, y: 0, active: false });
       busyRef.current = false;
     }, 300);
+  };
+
+  // Rewind the last swipe (Premium only).
+  const doRewind = async () => {
+    if (rewinding || busyRef.current || leaving) return;
+    if (!isPremium) {
+      haptics.notify("warning");
+      setShowPremium(true);
+      return;
+    }
+    setRewinding(true);
+    haptics.impact("light");
+    try {
+      const { profile } = await api.rewind();
+      if (profile) {
+        // Re-show the rewound person as the current card.
+        setQueue((q) => {
+          const copy = [...q];
+          copy.splice(index, 0, profile);
+          return copy;
+        });
+        setPhotoIdx(0);
+        setExpanded(false);
+        queryClient.invalidateQueries({ queryKey: ["likes"] });
+        queryClient.invalidateQueries({ queryKey: ["matches"] });
+      }
+    } catch {
+      /* nothing to rewind / not available */
+    } finally {
+      setRewinding(false);
+    }
   };
 
   // ---- Pointer (drag + tap) handling on the card ----
@@ -441,6 +489,18 @@ export function DiscoverScreen({
         <SlidersHorizontal className="h-5 w-5" />
       </button>
 
+      {/* Rewind button (left-center) — Premium perk */}
+      <button
+        type="button"
+        onClick={doRewind}
+        onPointerDown={(e) => e.stopPropagation()}
+        disabled={rewinding}
+        aria-label="rewind"
+        className="absolute left-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-amber-300 shadow-lg backdrop-blur active:scale-90 disabled:opacity-50"
+      >
+        <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
+      </button>
+
       {/* Action bar — white pill (pass) · dark circle (gift) · pink pill (like) */}
       <div className="absolute inset-x-0 bottom-4 z-40 flex items-center gap-2.5 px-5">
         <button
@@ -499,6 +559,22 @@ export function DiscoverScreen({
             setShowFilter(false);
           }}
           onClose={() => setShowFilter(false)}
+        />
+      )}
+
+      {showPremium && (
+        <PremiumModal
+          paymentUsername={paymentUsername}
+          priceStars={priceStars}
+          isPremium={isPremium}
+          onPaid={() => {
+            queryClient.invalidateQueries({ queryKey: ["me"] });
+            window.setTimeout(
+              () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+              1500,
+            );
+          }}
+          onClose={() => setShowPremium(false)}
         />
       )}
     </div>

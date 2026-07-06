@@ -146,13 +146,21 @@ export async function requireAuth(
     // Upsert a minimal user. Usually created already by the /start bot flow,
     // but this keeps the app robust if the Mini App is opened first.
     const telegramId = BigInt(tgUser.id);
+    const username = tgUser.username ?? null;
     let user = await prisma.user.findUnique({ where: { telegramId } });
     if (!user) {
       user = await prisma.user.create({
         data: {
           telegramId,
+          username,
           language: normalizeLocale(tgUser.language_code),
         },
+      });
+    } else if (user.username !== username) {
+      // Keep the stored username fresh (users can change it in Telegram).
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { username },
       });
     }
 
