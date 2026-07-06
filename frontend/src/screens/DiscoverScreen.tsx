@@ -491,20 +491,21 @@ export function DiscoverScreen({
         </div>
       </div>
 
-      {/* Action bar — rewind · pass pill · gift · like pill */}
-      <div className="absolute inset-x-0 bottom-4 z-40 flex items-center gap-2 px-4">
-        {/* Rewind (go back) — Premium perk */}
-        <button
-          type="button"
-          aria-label="rewind"
-          onClick={doRewind}
-          onPointerDown={(e) => e.stopPropagation()}
-          disabled={rewinding}
-          className="flex h-12 w-12 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-white/12 text-amber-300 backdrop-blur transition-transform active:scale-90 disabled:opacity-50"
-        >
-          <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
-        </button>
+      {/* Rewind (go back) — Premium perk. Floating on the left, up high so it
+          sits over the photo and never covers the info text at the bottom. */}
+      <button
+        type="button"
+        aria-label="rewind"
+        onClick={doRewind}
+        onPointerDown={(e) => e.stopPropagation()}
+        disabled={rewinding}
+        className="absolute left-2 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-amber-300 shadow-lg backdrop-blur active:scale-90 disabled:opacity-50"
+      >
+        <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
+      </button>
 
+      {/* Action bar — white pill (pass) · dark circle (gift) · pink pill (like) */}
+      <div className="absolute inset-x-0 bottom-4 z-40 flex items-center gap-2.5 px-5">
         <button
           type="button"
           aria-label="pass"
