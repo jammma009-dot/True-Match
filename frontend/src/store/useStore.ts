@@ -15,6 +15,11 @@ export interface OwnProfile {
   cityLabel: string;
   status: ProfileStatus;
   rejectionReason: string | null;
+  bio: string | null;
+  heightCm: number | null;
+  smoking: string | null;
+  drinking: string | null;
+  interests: string[];
   photos: { id: string; url: string; position: number }[];
 }
 
@@ -30,6 +35,9 @@ export interface MeResponse {
     cities: CityRef[];
     intents: string[];
     genders: string[];
+    interests: string[];
+    habits: string[];
+    height: { min: number; max: number };
   };
 }
 

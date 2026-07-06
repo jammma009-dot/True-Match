@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical } from "lucide-react";
+import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler } from "lucide-react";
 import { api, PublicProfile, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
+import { INTEREST_EMOJI, SMOKING_EMOJI, DRINKING_EMOJI } from "../lib/profileMeta";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -290,7 +291,39 @@ export function DiscoverScreen({
                 ? t("onboarding.gender.male")
                 : t("onboarding.gender.female")}
             </span>
+            {current.heightCm && (
+              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                <Ruler className="h-3.5 w-3.5" /> {current.heightCm} cm
+              </span>
+            )}
+            {current.smoking && (
+              <span className="rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                {SMOKING_EMOJI} {t(`habit.${current.smoking}`)}
+              </span>
+            )}
+            {current.drinking && (
+              <span className="rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                {DRINKING_EMOJI} {t(`habit.${current.drinking}`)}
+              </span>
+            )}
           </div>
+
+          {current.interests.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {current.interests.slice(0, 6).map((key) => (
+                <span
+                  key={key}
+                  className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur"
+                >
+                  {INTEREST_EMOJI[key] ?? "•"} {t(`interest.${key}`)}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {current.bio && (
+            <p className="mt-2.5 line-clamp-2 text-sm text-white/85">{current.bio}</p>
+          )}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { toOwnProfile } from "../utils/serialize";
 import { CITIES } from "../utils/cities";
+import { INTERESTS, MIN_HEIGHT, MAX_HEIGHT } from "../utils/interests";
 import { Language } from "@prisma/client";
 
 const router = Router();
@@ -36,6 +37,9 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       cities: CITIES,
       intents: ["serious", "marriage", "flirt", "friendship", "unsure"],
       genders: ["male", "female"],
+      interests: INTERESTS,
+      habits: ["never", "sometimes", "often"],
+      height: { min: MIN_HEIGHT, max: MAX_HEIGHT },
     },
   });
 });

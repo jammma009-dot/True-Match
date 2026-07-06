@@ -5,8 +5,9 @@ import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { isAdult, MIN_AGE } from "../utils/age";
 import { toOwnProfile } from "../utils/serialize";
-import { Gender, Intent, City } from "@prisma/client";
+import { Gender, Intent, City, Habit } from "@prisma/client";
 import { CITY_VALUES } from "../utils/cities";
+import { INTEREST_SET, MAX_INTERESTS, MIN_HEIGHT, MAX_HEIGHT } from "../utils/interests";
 
 const router = Router();
 
@@ -109,6 +110,62 @@ router.post(
     });
 
     res.status(201).json({ profile: toOwnProfile(profile, photos) });
+  },
+);
+
+/**
+ * PATCH /api/profile
+ * Edit the current user's profile info (name, bio, height, interests, city,
+ * intent, smoking, drinking). Does NOT change approval status or gender.
+ */
+const editSchema = z.object({
+  name: z.string().trim().min(1).max(50).optional(),
+  bio: z.string().trim().max(500).optional(),
+  city: z.nativeEnum(City).optional(),
+  intent: z.nativeEnum(Intent).optional(),
+  heightCm: z.number().int().min(MIN_HEIGHT).max(MAX_HEIGHT).nullable().optional(),
+  smoking: z.nativeEnum(Habit).nullable().optional(),
+  drinking: z.nativeEnum(Habit).nullable().optional(),
+  interests: z.array(z.string()).max(20).optional(),
+});
+
+router.patch(
+  "/",
+  requireAuth,
+  validateBody(editSchema),
+  async (req: Request, res: Response) => {
+    const user = req.authUser!;
+    const data = req.body as z.infer<typeof editSchema>;
+
+    const existing = await prisma.profile.findUnique({
+      where: { userId: user.id },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "profile_not_found" });
+      return;
+    }
+
+    // Keep only recognised interest keys, capped.
+    const interests = data.interests
+      ? data.interests.filter((i) => INTEREST_SET.has(i)).slice(0, MAX_INTERESTS)
+      : undefined;
+
+    const updated = await prisma.profile.update({
+      where: { userId: user.id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.bio !== undefined ? { bio: data.bio || null } : {}),
+        ...(data.city !== undefined ? { city: data.city } : {}),
+        ...(data.intent !== undefined ? { intent: data.intent } : {}),
+        ...(data.heightCm !== undefined ? { heightCm: data.heightCm } : {}),
+        ...(data.smoking !== undefined ? { smoking: data.smoking } : {}),
+        ...(data.drinking !== undefined ? { drinking: data.drinking } : {}),
+        ...(interests !== undefined ? { interests } : {}),
+      },
+      include: { photos: true },
+    });
+
+    res.json({ profile: toOwnProfile(updated, updated.photos) });
   },
 );
 

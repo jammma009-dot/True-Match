@@ -56,7 +56,23 @@ export interface PublicProfile {
   intent: string;
   city: string;
   cityLabel: string;
+  bio: string | null;
+  heightCm: number | null;
+  smoking: string | null;
+  drinking: string | null;
+  interests: string[];
   photos: { url: string; position: number }[];
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  bio?: string;
+  city?: string;
+  intent?: string;
+  heightCm?: number | null;
+  smoking?: string | null;
+  drinking?: string | null;
+  interests?: string[];
 }
 
 export interface MatchListItem {
@@ -117,6 +133,12 @@ export const api = {
   }) =>
     request<{ profile: unknown }>("/api/profile", {
       method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateProfile: (payload: UpdateProfilePayload) =>
+    request<{ profile: unknown }>("/api/profile", {
+      method: "PATCH",
       body: JSON.stringify(payload),
     }),
 

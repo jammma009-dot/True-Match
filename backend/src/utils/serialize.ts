@@ -14,6 +14,11 @@ export interface PublicProfile {
   intent: string;
   city: string;
   cityLabel: string;
+  bio: string | null;
+  heightCm: number | null;
+  smoking: string | null;
+  drinking: string | null;
+  interests: string[];
   photos: { url: string; position: number }[];
 }
 
@@ -30,6 +35,11 @@ export function toPublicProfile(
     intent: profile.intent,
     city: profile.city,
     cityLabel: cityLabel(profile.city),
+    bio: profile.bio ?? null,
+    heightCm: profile.heightCm ?? null,
+    smoking: profile.smoking ?? null,
+    drinking: profile.drinking ?? null,
+    interests: profile.interests ?? [],
     photos: photos
       .sort((a, b) => a.position - b.position)
       .map((p) => ({ url: p.url, position: p.position })),
@@ -53,6 +63,11 @@ export function toOwnProfile(profile: Profile, photos: Photo[]) {
     cityLabel: cityLabel(profile.city),
     status: profile.status,
     rejectionReason: profile.rejectionReason,
+    bio: profile.bio ?? null,
+    heightCm: profile.heightCm ?? null,
+    smoking: profile.smoking ?? null,
+    drinking: profile.drinking ?? null,
+    interests: profile.interests ?? [],
     photos: photos
       .sort((a, b) => a.position - b.position)
       .map((p) => ({ id: p.id, url: p.url, position: p.position })),

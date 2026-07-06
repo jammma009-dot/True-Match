@@ -61,6 +61,13 @@ enum SwipeAction {
   pass
 }
 
+// Lifestyle frequency (smoking / drinking)
+enum Habit {
+  never
+  sometimes
+  often
+}
+
 // ---------- Models ----------
 
 model User {
@@ -100,6 +107,14 @@ model Profile {
   rejectionReason String?
   // Locks gender edits once approved
   genderLocked Boolean @default(false)
+
+  // Extended dating-profile info (all optional, editable any time)
+  bio       String?
+  heightCm  Int?
+  smoking   Habit?
+  drinking  Habit?
+  interests String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
