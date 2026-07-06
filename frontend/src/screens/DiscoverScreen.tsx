@@ -183,13 +183,13 @@ export function DiscoverScreen({
 
   return (
     <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-3 pb-3 pt-2">
-      {/* Brand logo header */}
-      <div className="flex flex-shrink-0 items-center justify-center py-1.5">
+      {/* Brand logo header — solid wordmark (black bg blends into the app) */}
+      <div className="flex flex-shrink-0 items-center justify-center pb-1 pt-0.5">
         <img
-          src="/logo-mark.png"
+          src="/logo-wordmark.png"
           alt="True Match"
           draggable={false}
-          className="h-7 w-auto object-contain"
+          className="h-10 w-auto object-contain"
         />
       </div>
 

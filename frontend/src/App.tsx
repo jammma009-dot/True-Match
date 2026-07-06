@@ -33,9 +33,9 @@ export default function App() {
     return (
       <FullScreen>
         <img
-          src="/logo-mark.png"
+          src="/logo-wordmark.png"
           alt="True Match"
-          className="mb-6 w-48 max-w-[70%] object-contain"
+          className="mb-6 w-56 max-w-[75%] object-contain"
         />
         <p className="text-tg-hint">{t("error.notInTelegram")}</p>
       </FullScreen>
