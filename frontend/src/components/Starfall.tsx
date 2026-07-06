@@ -5,12 +5,10 @@
  * so app content (cards, screens) renders on top.
  */
 const STARS = [
-  { top: "78%", left: "8%", delay: "0s", duration: "9s" },
-  { top: "62%", left: "30%", delay: "3.4s", duration: "11s" },
-  { top: "88%", left: "52%", delay: "6.1s", duration: "10s" },
-  { top: "70%", left: "70%", delay: "8.7s", duration: "12s" },
-  { top: "50%", left: "18%", delay: "12.5s", duration: "10.5s" },
-  { top: "40%", left: "60%", delay: "15.2s", duration: "13s" },
+  { top: "82%", left: "10%", delay: "1s", duration: "22s" },
+  { top: "64%", left: "34%", delay: "9s", duration: "26s" },
+  { top: "74%", left: "62%", delay: "17s", duration: "24s" },
+  { top: "52%", left: "22%", delay: "27s", duration: "28s" },
 ];
 
 export function Starfall() {

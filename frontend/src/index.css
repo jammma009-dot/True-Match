@@ -185,49 +185,59 @@ body::after {
   overflow: hidden;
   pointer-events: none;
 }
+/* A shooting star is a small comet: a glowing head with a soft tapered trail
+   that fades behind it. It streaks fast, then stays hidden for a long while. */
 .shooting-star {
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 9999px;
   background: #ffffff;
-  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.85);
   opacity: 0;
   transform: rotate(-45deg);
   animation-name: starShoot;
-  animation-timing-function: ease-in;
+  animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
   animation-iteration-count: infinite;
 }
-/* The trailing tail (points down-left, behind the direction of travel). */
+/* Soft, tapered comet trail — brightest at the head, fading to the tail
+   (down-left, behind the direction of travel). */
 .shooting-star::after {
   content: "";
   position: absolute;
   top: 50%;
-  right: 2px;
-  width: 90px;
-  height: 1.5px;
+  right: 3px;
+  height: 2px;
+  width: 70px;
   transform: translateY(-50%);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.55), transparent);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.12) 55%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
   border-radius: 9999px;
+  filter: blur(1px);
 }
 @keyframes starShoot {
   0% {
     opacity: 0;
     transform: translate(0, 0) rotate(-45deg);
   }
-  6% {
+  1% {
     opacity: 1;
   }
-  18% {
+  5% {
     opacity: 1;
+    transform: translate(62vw, -62vh) rotate(-45deg);
   }
-  26% {
+  6.5% {
     opacity: 0;
-    transform: translate(46vw, -46vh) rotate(-45deg);
+    transform: translate(66vw, -66vh) rotate(-45deg);
   }
   100% {
     opacity: 0;
-    transform: translate(46vw, -46vh) rotate(-45deg);
+    transform: translate(66vw, -66vh) rotate(-45deg);
   }
 }
 

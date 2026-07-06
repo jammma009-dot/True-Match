@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MapPin, Ruler, Pencil, ChevronRight, Trash2, MessageCircle, Crown } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
-import { Locale } from "../i18n";
 import { haptics, openTelegramLink } from "../lib/telegram";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { EditProfileScreen } from "./EditProfileScreen";
@@ -29,7 +28,6 @@ function completeness(p: OwnProfile): number {
 export function ProfileScreen() {
   const t = useT();
   const me = useStore((s) => s.me);
-  const setLanguage = useStore((s) => s.setLanguage);
   const queryClient = useQueryClient();
   const profile = me?.profile;
   const stats = me?.stats;
@@ -60,16 +58,6 @@ export function ProfileScreen() {
     }
   };
 
-  const changeLanguage = async (lang: Locale) => {
-    haptics.select();
-    setLanguage(lang);
-    try {
-      await api.setLanguage(lang);
-    } catch {
-      /* ignore */
-    }
-  };
-
   if (editing) {
     return <EditProfileScreen onClose={() => setEditing(false)} />;
   }
@@ -77,17 +65,17 @@ export function ProfileScreen() {
   const pct = profile ? completeness(profile) : 0;
 
   return (
-    <div className="min-h-full px-4 pb-8 pt-6">
+    <div className="min-h-full px-4 pb-6 pt-4">
       {/* Centered header */}
       <div className="flex flex-col items-center text-center">
-        <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-white/10 bg-[var(--tg-secondary-bg-color)]">
+        <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white/10 bg-[var(--tg-secondary-bg-color)]">
           {profile?.photos[0] ? (
             <img src={profile.photos[0].url} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-4xl">👤</div>
           )}
         </div>
-        <h1 className="mt-4 flex items-center justify-center gap-2 text-2xl font-bold text-tg">
+        <h1 className="mt-3 flex items-center justify-center gap-2 text-xl font-bold text-tg">
           <span>
             {profile?.name}
             {profile ? `, ${profile.age}` : ""}
@@ -102,7 +90,7 @@ export function ProfileScreen() {
       </div>
 
       {/* Stats row */}
-      <div className="mt-5 flex items-center rounded-2xl bg-[var(--tg-secondary-bg-color)] py-4">
+      <div className="mt-4 flex items-center rounded-2xl bg-[var(--tg-secondary-bg-color)] py-3">
         <Stat value={stats?.views ?? 0} label={t("profile.stat.views")} />
         <StatDivider />
         <Stat value={stats?.likes ?? 0} label={t("profile.stat.likes")} />
@@ -133,9 +121,9 @@ export function ProfileScreen() {
           haptics.impact("light");
           setEditing(true);
         }}
-        className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-4 text-left active:opacity-80"
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
       >
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/20 text-brand">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/20 text-brand">
           <Pencil className="h-4 w-4" />
         </span>
         <span className="flex-1 font-semibold text-tg">{t("profile.editProfile")}</span>
@@ -191,26 +179,8 @@ export function ProfileScreen() {
         </div>
       )}
 
-      {/* Language switcher */}
-      <div className="mt-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] p-4">
-        <p className="mb-3 text-sm text-tg-hint">{t("profile.language")}</p>
-        <div className="flex gap-3">
-          {(["uz", "ru"] as const).map((lang) => (
-            <button
-              key={lang}
-              onClick={() => changeLanguage(lang)}
-              className={`flex-1 rounded-xl py-2.5 font-medium ${
-                me?.user.language === lang ? "bg-brand text-white" : "bg-[var(--tg-bg-color)] text-tg"
-              }`}
-            >
-              {lang === "uz" ? "🇺🇿 O'zbek" : "🇷🇺 Русский"}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Contact + Buy Premium */}
-      <div className="mt-3 space-y-3">
+      <div className="mt-3 space-y-2.5">
         {contactUsername && (
           <button
             type="button"
@@ -218,9 +188,9 @@ export function ProfileScreen() {
               haptics.impact("light");
               openTelegramLink(`https://t.me/${contactUsername}`);
             }}
-            className="flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-4 text-left active:opacity-80"
+            className="flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/20 text-brand">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/20 text-brand">
               <MessageCircle className="h-4 w-4" />
             </span>
             <span className="flex-1 font-semibold text-tg">{t("profile.contact")}</span>
@@ -234,9 +204,9 @@ export function ProfileScreen() {
             haptics.impact("light");
             setShowPremium(true);
           }}
-          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-4 py-4 text-left text-white active:opacity-90"
+          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-4 py-3 text-left text-white active:opacity-90"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
             <Crown className="h-4 w-4" />
           </span>
           <span className="flex-1 font-semibold">{t("profile.premium")}</span>
@@ -250,9 +220,9 @@ export function ProfileScreen() {
             haptics.impact("light");
             setShowPresent(true);
           }}
-          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-pink-500 to-brand px-4 py-4 text-left text-white active:opacity-90"
+          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-pink-500 to-brand px-4 py-3 text-left text-white active:opacity-90"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
             <Gift className="h-4 w-4" />
           </span>
           <span className="flex-1 font-semibold">
@@ -272,7 +242,7 @@ export function ProfileScreen() {
         type="button"
         onClick={handleDelete}
         disabled={deleting}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-pass/15 py-4 font-semibold text-pass active:opacity-80 disabled:opacity-50"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-pass/15 py-3 font-semibold text-pass active:opacity-80 disabled:opacity-50"
       >
         <Trash2 className="h-5 w-5" />
         {t("profile.delete")}
