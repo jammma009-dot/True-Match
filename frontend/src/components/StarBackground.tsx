@@ -32,9 +32,10 @@ export function StarBackground() {
         <div className="stars s3" style={{ ["--shadow" as string]: BIG } as React.CSSProperties} />
       </div>
 
-      {/* Dark dome at the very top-center so the logo sits on its own bg color
-          (#050608) — top-left/right stay gradient. */}
+      {/* Dark domes at top-center AND bottom-center — squeezes the pink glows
+          into the corners so the gradient reads as an hourglass shape. */}
       <div className="logo-dome" aria-hidden="true" />
+      <div className="logo-dome logo-dome--bottom" aria-hidden="true" />
     </>
   );
 }

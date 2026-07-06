@@ -116,6 +116,12 @@ input[type="range"]::-moz-range-thumb {
   pointer-events: none;
   background: radial-gradient(180px 64px at 50% 0%, #050608 55%, rgba(5, 6, 8, 0) 100%);
 }
+/* Mirrored dome at the bottom-center → the pink corners form an hourglass. */
+.logo-dome--bottom {
+  top: auto;
+  bottom: 0;
+  background: radial-gradient(180px 64px at 50% 100%, #050608 55%, rgba(5, 6, 8, 0) 100%);
+}
 
 /* Parallax star background (3 depth layers scrolling at different speeds).
    Generated as box-shadow dots by the StarBackground component. Sits above the
