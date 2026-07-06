@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { MapPin, Ruler, Pencil, ChevronRight } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { MapPin, Ruler, Pencil, ChevronRight, Trash2 } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { Locale } from "../i18n";
@@ -25,9 +26,23 @@ export function ProfileScreen() {
   const t = useT();
   const me = useStore((s) => s.me);
   const setLanguage = useStore((s) => s.setLanguage);
+  const queryClient = useQueryClient();
   const profile = me?.profile;
   const stats = me?.stats;
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!window.confirm(t("profile.deleteConfirm"))) return;
+    setDeleting(true);
+    try {
+      await api.deleteProfile();
+      haptics.notify("warning");
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+    } catch {
+      setDeleting(false);
+    }
+  };
 
   const changeLanguage = async (lang: Locale) => {
     haptics.select();
@@ -171,6 +186,17 @@ export function ProfileScreen() {
           ))}
         </div>
       </div>
+
+      {/* Delete profile */}
+      <button
+        type="button"
+        onClick={handleDelete}
+        disabled={deleting}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-pass/15 py-4 font-semibold text-pass active:opacity-80 disabled:opacity-50"
+      >
+        <Trash2 className="h-5 w-5" />
+        {t("profile.delete")}
+      </button>
     </div>
   );
 }

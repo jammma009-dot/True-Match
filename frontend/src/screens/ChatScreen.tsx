@@ -47,6 +47,8 @@ export function ChatScreen({
   useEffect(() => {
     const socket = getSocket();
     socket.emit("chat:open", { matchId: match.matchId });
+    // Opening the chat clears both the unread messages and the "new match" flag.
+    void api.markMatchSeen(match.matchId).catch(() => undefined);
 
     const onNew = (msg: ChatMessage) => {
       if (msg.matchId === match.matchId) {

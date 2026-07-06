@@ -92,6 +92,7 @@ export interface MatchListItem {
     createdAt: string;
   } | null;
   unread?: number;
+  seen?: boolean;
 }
 
 export interface ChatMessage {
@@ -161,6 +162,15 @@ export const api = {
       method: "POST",
       body: "{}",
     }),
+
+  markMatchSeen: (matchId: string) =>
+    request<{ ok: true }>(`/api/matches/${matchId}/seen`, {
+      method: "POST",
+      body: "{}",
+    }),
+
+  deleteProfile: () =>
+    request<{ ok: true }>("/api/profile", { method: "DELETE" }),
 
   sendMessage: (matchId: string, body: string) =>
     request<{ message: ChatMessage }>(`/api/matches/${matchId}/messages`, {

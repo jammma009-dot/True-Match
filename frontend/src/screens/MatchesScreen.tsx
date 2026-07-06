@@ -4,6 +4,7 @@ import { api, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
 import { Spinner } from "../components/ui";
 import { haptics } from "../lib/telegram";
+import { LogoHeader } from "../components/LogoHeader";
 
 export function MatchesScreen({
   onOpenChat,
@@ -22,7 +23,8 @@ export function MatchesScreen({
   const matches = data?.matches ?? [];
 
   return (
-    <div className="min-h-full px-4 pt-4">
+    <div className="min-h-full px-4 pb-4">
+      <LogoHeader />
       <h1 className="mb-4 text-2xl font-bold text-tg">{t("matches.title")}</h1>
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-8 pt-24 text-center text-tg-hint">

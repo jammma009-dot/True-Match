@@ -94,6 +94,8 @@
   "profile.stat.matches": "Moslik",
   "profile.stat.days": "Kunlar",
   "profile.complete": "Profilni to'ldiring — ko'proq e'tibor oling",
+  "profile.delete": "Profilni o'chirish",
+  "profile.deleteConfirm": "Profilingizni butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
   "profile.bio": "Men haqimda",
   "profile.height": "Bo'y",
   "profile.interests": "Qiziqishlar",

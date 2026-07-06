@@ -169,6 +169,17 @@ router.patch(
   },
 );
 
+/**
+ * DELETE /api/profile
+ * Delete the current user's account entirely (profile, photos, swipes, matches,
+ * messages, reports, blocks all cascade). Reopening the app starts fresh.
+ */
+router.delete("/", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+  await prisma.user.delete({ where: { id: user.id } });
+  res.json({ ok: true });
+});
+
 // Ensure CITY_VALUES is referenced (keeps enum + list in sync at build time).
 void CITY_VALUES;
 

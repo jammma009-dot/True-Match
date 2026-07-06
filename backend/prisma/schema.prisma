@@ -158,6 +158,9 @@ model Match {
   userA     User      @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
   userBId   String
   userB     User      @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  // Whether each user has seen the "new match" celebration yet.
+  seenA     Boolean   @default(false)
+  seenB     Boolean   @default(false)
   createdAt DateTime  @default(now())
   messages  Message[]
 

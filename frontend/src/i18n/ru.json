@@ -94,6 +94,8 @@
   "profile.stat.matches": "Совпадения",
   "profile.stat.days": "Дни",
   "profile.complete": "Заполните профиль — больше внимания",
+  "profile.delete": "Удалить профиль",
+  "profile.deleteConfirm": "Удалить профиль навсегда? Это действие нельзя отменить.",
   "profile.bio": "О себе",
   "profile.height": "Рост",
   "profile.interests": "Интересы",

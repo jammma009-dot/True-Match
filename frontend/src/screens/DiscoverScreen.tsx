@@ -4,6 +4,7 @@ import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Rul
 import { api, PublicProfile, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
 import { INTEREST_EMOJI, SMOKING_EMOJI, DRINKING_EMOJI } from "../lib/profileMeta";
+import { LogoHeader } from "../components/LogoHeader";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -155,18 +156,21 @@ export function DiscoverScreen({
 
   if (!current) {
     return (
-      <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)]">
-          <Sparkles className="h-9 w-9 text-brand" />
+      <div className="flex h-full flex-col">
+        <LogoHeader />
+        <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)]">
+            <Sparkles className="h-9 w-9 text-brand" />
+          </div>
+          <p className="mb-6 max-w-xs text-tg-hint">{t("discover.empty")}</p>
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 rounded-full bg-[var(--tg-secondary-bg-color)] px-5 py-2.5 font-medium text-tg active:opacity-70"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            {t("common.retry")}
+          </button>
         </div>
-        <p className="mb-6 max-w-xs text-tg-hint">{t("discover.empty")}</p>
-        <button
-          onClick={() => refetch()}
-          className="flex items-center gap-2 rounded-full bg-[var(--tg-secondary-bg-color)] px-5 py-2.5 font-medium text-tg active:opacity-70"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          {t("common.retry")}
-        </button>
       </div>
     );
   }

@@ -65,11 +65,30 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
             }
           : null,
         unread,
+        seen: m.userAId === user.id ? m.seenA : m.seenB,
       };
     }),
   );
 
   res.json({ matches: result });
+});
+
+/**
+ * POST /api/matches/:matchId/seen — mark the "new match" celebration as seen
+ * for the current user (so it doesn't pop again on next open).
+ */
+router.post("/:matchId/seen", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+  const match = await getMemberMatch(req.params.matchId, user.id);
+  if (!match) {
+    res.status(404).json({ error: "match_not_found" });
+    return;
+  }
+  await prisma.match.update({
+    where: { id: match.id },
+    data: match.userAId === user.id ? { seenA: true } : { seenB: true },
+  });
+  res.json({ ok: true });
 });
 
 /**
