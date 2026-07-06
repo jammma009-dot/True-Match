@@ -206,15 +206,17 @@ export function ProfileScreen() {
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center">
-      <span className="text-xl font-bold text-brand">{value}</span>
-      <span className="mt-0.5 text-[11px] uppercase tracking-wide text-tg-hint">{label}</span>
+    <div className="flex flex-1 flex-col items-center px-2">
+      <span className="text-lg font-bold text-brand">{value}</span>
+      <span className="mt-1 text-center text-[9px] font-medium uppercase leading-tight tracking-tight text-tg-hint">
+        {label}
+      </span>
     </div>
   );
 }
 
 function StatDivider() {
-  return <div className="h-8 w-px bg-white/10" />;
+  return <div className="h-8 w-px flex-shrink-0 bg-white/10" />;
 }
 
 function Badge({

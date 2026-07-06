@@ -280,8 +280,8 @@ export function DiscoverScreen({
           NOPE
         </div>
 
-        {/* Info overlay — compact by default, expands upward on "more" */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/55 to-transparent px-4 pb-[84px] pt-14">
+        {/* Info overlay — minimal by default, expands upward on "more" */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/45 to-transparent px-4 pb-[78px] pt-10">
           <div className="mb-0.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
             <Heart className="h-3 w-3" fill="currentColor" />
             {t(`intent.${current.intent}`)}
@@ -290,7 +290,9 @@ export function DiscoverScreen({
             <h2 className="text-2xl font-extrabold leading-none text-white">{current.name}</h2>
             <span className="text-lg font-light text-white/90">{current.age}</span>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+
+          {/* Core badges — always shown (one row) */}
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
             <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
               <MapPin className="h-3 w-3" /> {current.cityLabel}
             </span>
@@ -304,46 +306,57 @@ export function DiscoverScreen({
                 <Ruler className="h-3 w-3" /> {current.heightCm} cm
               </span>
             )}
-            {current.smoking && (
-              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                <SmokingIcon className="h-3 w-3" /> {t(`habit.${current.smoking}`)}
-              </span>
-            )}
-            {current.drinking && (
-              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                <DrinkingIcon className="h-3 w-3" /> {t(`habit.${current.drinking}`)}
-              </span>
-            )}
           </div>
 
-          {current.interests.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {(expanded ? current.interests : current.interests.slice(0, 3)).map((key) => {
-                const Icon = INTEREST_ICON[key];
-                return (
-                  <span
-                    key={key}
-                    className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
-                  >
-                    {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
-                  </span>
-                );
-              })}
-            </div>
+          {/* Extra details — only when expanded */}
+          {expanded && (
+            <>
+              {(current.smoking || current.drinking) && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {current.smoking && (
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                      <SmokingIcon className="h-3 w-3" /> {t(`habit.${current.smoking}`)}
+                    </span>
+                  )}
+                  {current.drinking && (
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                      <DrinkingIcon className="h-3 w-3" /> {t(`habit.${current.drinking}`)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {current.interests.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {current.interests.map((key) => {
+                    const Icon = INTEREST_ICON[key];
+                    return (
+                      <span
+                        key={key}
+                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
+                      >
+                        {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {current.bio && (
+                <p className="mt-1.5 text-[13px] leading-snug text-white/85">{current.bio}</p>
+              )}
+            </>
           )}
 
-          {current.bio && (
-            <p className={`mt-1.5 text-[13px] leading-snug text-white/85 ${expanded ? "" : "line-clamp-1"}`}>
-              {current.bio}
-            </p>
-          )}
-
-          {(current.interests.length > 3 || (current.bio?.length ?? 0) > 55) && (
+          {(current.smoking ||
+            current.drinking ||
+            current.interests.length > 0 ||
+            current.bio) && (
             <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setExpanded((v) => !v)}
-              className="pointer-events-auto mt-1 text-xs font-bold text-brand"
+              className="pointer-events-auto mt-1.5 text-xs font-bold text-brand"
             >
               {expanded ? t("common.less") : t("common.more")}
             </button>
