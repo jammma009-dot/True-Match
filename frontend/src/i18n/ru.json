@@ -65,6 +65,8 @@
   "discover.empty": "Пока новых профилей нет. Загляните позже!",
   "discover.locked": "Этот раздел откроется после одобрения профиля.",
   "discover.newMatch": "Новое совпадение! 🎉",
+  "discover.sendMessage": "Написать сообщение",
+  "discover.keepSwiping": "Продолжить",
   "discover.gift": "Подарок (скоро)",
 
   "matches.title": "Чаты",

@@ -45,24 +45,31 @@ export function initTelegram(): void {
   applyTheme();
 }
 
-/** Map Telegram theme params onto CSS variables consumed by Tailwind. */
+/**
+ * Force a consistent, premium DARK theme regardless of the user's Telegram
+ * light/dark setting. (We intentionally ignore Telegram's theme params so the
+ * app never renders in a light theme.)
+ */
+const DARK = {
+  bg: "#0b0b10",
+  secondary: "#17171f",
+  text: "#ffffff",
+  hint: "#8b8b96",
+};
+
 export function applyTheme(): void {
   const wa = webApp();
   const root = document.documentElement;
-  const tp = wa?.themeParams ?? {};
 
-  const set = (cssVar: string, value?: string, fallback?: string) => {
-    root.style.setProperty(cssVar, value || fallback || "");
-  };
-
-  set("--tg-bg-color", tp.bg_color, "#0f0f12");
-  set("--tg-secondary-bg-color", tp.secondary_bg_color, "#17171c");
-  set("--tg-text-color", tp.text_color, "#ffffff");
-  set("--tg-hint-color", tp.hint_color, "#9a9aa5");
+  root.style.setProperty("--tg-bg-color", DARK.bg);
+  root.style.setProperty("--tg-secondary-bg-color", DARK.secondary);
+  root.style.setProperty("--tg-text-color", DARK.text);
+  root.style.setProperty("--tg-hint-color", DARK.hint);
+  root.style.colorScheme = "dark";
 
   try {
-    wa?.setBackgroundColor?.(tp.bg_color || "#0f0f12");
-    wa?.setHeaderColor?.(tp.bg_color || "#0f0f12");
+    wa?.setBackgroundColor?.(DARK.bg);
+    wa?.setHeaderColor?.(DARK.bg);
   } catch {
     /* ignore */
   }

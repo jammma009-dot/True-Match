@@ -65,6 +65,8 @@
   "discover.empty": "Hozircha yangi profillar yo'q. Keyinroq qaytib keling!",
   "discover.locked": "Profilingiz tasdiqlangach bu bo'lim ochiladi.",
   "discover.newMatch": "Yangi moslik! 🎉",
+  "discover.sendMessage": "Xabar yozish",
+  "discover.keepSwiping": "Davom etish",
   "discover.gift": "Sovg'a (tez orada)",
 
   "matches.title": "Suhbatlar",

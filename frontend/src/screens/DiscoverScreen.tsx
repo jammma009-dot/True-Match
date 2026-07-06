@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Heart, Gift, MapPin, Sparkles, RefreshCw } from "lucide-react";
-import { api, PublicProfile } from "../lib/api";
+import { X, Heart, Gift, MapPin, Sparkles, RefreshCw, MessageCircle } from "lucide-react";
+import { api, PublicProfile, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
@@ -9,7 +9,11 @@ import { ReportBlockModal } from "../components/ReportBlockModal";
 const SWIPE_THRESHOLD = 90; // px of horizontal drag to count as a swipe
 const TAP_SLOP = 10; // px of movement below which we treat it as a tap
 
-export function DiscoverScreen() {
+export function DiscoverScreen({
+  onOpenChat,
+}: {
+  onOpenChat: (m: MatchListItem) => void;
+}) {
   const t = useT();
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["discovery"],
@@ -19,7 +23,7 @@ export function DiscoverScreen() {
   const [queue, setQueue] = useState<PublicProfile[]>([]);
   const [index, setIndex] = useState(0);
   const [photoIdx, setPhotoIdx] = useState(0);
-  const [matchName, setMatchName] = useState<string | null>(null);
+  const [matched, setMatched] = useState<{ matchId: string | null; profile: PublicProfile } | null>(null);
   const [reportFor, setReportFor] = useState<string | null>(null);
 
   // Drag / animation state
@@ -63,7 +67,7 @@ export function DiscoverScreen() {
       .then((res) => {
         if (res.matched) {
           haptics.notify("success");
-          setMatchName(current.name);
+          setMatched({ matchId: res.matchId, profile: current });
         }
       })
       .catch(() => undefined);
@@ -74,6 +78,25 @@ export function DiscoverScreen() {
       setDrag({ x: 0, y: 0, active: false });
       busyRef.current = false;
     }, 300);
+  };
+
+  const goToChat = () => {
+    if (!matched?.matchId) return;
+    const p = matched.profile;
+    onOpenChat({
+      matchId: matched.matchId,
+      createdAt: new Date().toISOString(),
+      user: {
+        userId: p.userId,
+        name: p.name,
+        age: p.age,
+        city: p.city,
+        cityLabel: p.cityLabel,
+        photo: p.photos[0]?.url ?? null,
+      },
+      lastMessage: null,
+    });
+    setMatched(null);
   };
 
   // ---- Pointer (drag + tap) handling on the card ----
@@ -264,18 +287,51 @@ export function DiscoverScreen() {
         </ActionButton>
       </div>
 
-      {/* Match celebration */}
-      {matchName && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 px-8 text-center backdrop-blur-sm"
-          onClick={() => setMatchName(null)}
-        >
-          <Sparkles className="mb-4 h-14 w-14 text-brand" />
-          <h2 className="mb-2 bg-gradient-to-r from-brand to-pink-400 bg-clip-text text-4xl font-extrabold text-transparent">
+      {/* Match celebration — stays until the user chooses an action */}
+      {matched && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 px-8 text-center backdrop-blur-md">
+          <Sparkles className="mb-3 h-12 w-12 animate-pulse text-brand" />
+          <h2 className="mb-6 bg-gradient-to-r from-brand via-fuchsia-400 to-pink-400 bg-clip-text text-4xl font-extrabold text-transparent">
             {t("discover.newMatch")}
           </h2>
-          <p className="text-lg text-white/80">{matchName}</p>
-          <p className="mt-6 text-sm text-white/50">Tap to continue</p>
+
+          {/* Photo of the matched person */}
+          <div className="mb-4 h-40 w-40 overflow-hidden rounded-full border-4 border-brand/60 shadow-2xl shadow-brand/30">
+            {matched.profile.photos[0]?.url ? (
+              <img
+                src={matched.profile.photos[0].url}
+                alt={matched.profile.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-5xl">
+                👤
+              </div>
+            )}
+          </div>
+          <p className="mb-8 text-lg text-white/90">
+            {matched.profile.name}, {matched.profile.age}
+          </p>
+
+          <div className="w-full max-w-xs space-y-3">
+            {matched.matchId && (
+              <button
+                type="button"
+                onClick={goToChat}
+                className="flex w-full touch-manipulation items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-3.5 font-semibold text-white shadow-lg shadow-brand/25 active:scale-[0.98]"
+              >
+                <MessageCircle className="h-5 w-5" />
+                {t("discover.sendMessage")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setMatched(null)}
+              className="w-full touch-manipulation rounded-2xl bg-white/10 py-3.5 font-semibold text-white active:scale-[0.98]"
+            >
+              {t("discover.keepSwiping")}
+            </button>
+          </div>
         </div>
       )}
 

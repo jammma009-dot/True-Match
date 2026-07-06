@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BottomNav, Tab } from "../components/BottomNav";
 import { DiscoverScreen } from "./DiscoverScreen";
 import { LikesScreen } from "./LikesScreen";
@@ -35,11 +35,13 @@ export function MainApp() {
     };
   }, []);
 
+  const closeChat = useCallback(() => setActiveChat(null), []);
+
   // Full-screen chat takes over (its own back button returns here).
   if (activeChat) {
     return (
       <div className="h-full">
-        <ChatScreen match={activeChat} onBack={() => setActiveChat(null)} />
+        <ChatScreen match={activeChat} onBack={closeChat} />
       </div>
     );
   }
@@ -48,7 +50,7 @@ export function MainApp() {
     <div className="flex h-full flex-col">
       <main className="relative min-h-0 flex-1">
         {/* Discover fills the screen with no scrolling; other tabs scroll. */}
-        {tab === "discover" && <DiscoverScreen />}
+        {tab === "discover" && <DiscoverScreen onOpenChat={setActiveChat} />}
         {tab === "likes" && (
           <div className="h-full overflow-y-auto">
             <LikesScreen />

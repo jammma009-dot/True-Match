@@ -141,7 +141,7 @@ export function OnboardingWizard() {
 
       <div className="flex-1 pt-8">
         {step === "name" && (
-          <StepShell title={t("onboarding.name.title")} helper={t("onboarding.name.helper")}>
+          <StepShell title={t("onboarding.name.title")}>
             <input
               autoFocus
               className="w-full rounded-xl bg-[var(--tg-secondary-bg-color)] px-4 py-3.5 text-lg text-tg outline-none placeholder:text-tg-hint"

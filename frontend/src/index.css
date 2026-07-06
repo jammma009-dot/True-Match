@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --tg-bg-color: #0f0f12;
-  --tg-secondary-bg-color: #17171c;
+  --tg-bg-color: #0b0b10;
+  --tg-secondary-bg-color: #17171f;
   --tg-text-color: #ffffff;
-  --tg-hint-color: #9a9aa5;
+  --tg-hint-color: #8b8b96;
+  color-scheme: dark;
 }
 
 html,
@@ -17,7 +18,9 @@ body,
 
 body {
   margin: 0;
-  background: var(--tg-bg-color);
+  background:
+    radial-gradient(1100px 520px at 50% -12%, rgba(109, 94, 252, 0.16), transparent 62%),
+    var(--tg-bg-color);
   color: var(--tg-text-color);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;

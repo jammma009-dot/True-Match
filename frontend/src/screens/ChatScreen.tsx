@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Send } from "lucide-react";
+import { MoreVertical, Send, ChevronLeft } from "lucide-react";
 import { api, ChatMessage, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { getSocket } from "../lib/socket";
@@ -85,7 +85,15 @@ export function ChatScreen({
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-white/5 bg-[var(--tg-secondary-bg-color)] px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-white/5 bg-[var(--tg-secondary-bg-color)] px-3 py-3">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="back"
+          className="flex h-9 w-9 flex-shrink-0 touch-manipulation items-center justify-center rounded-full text-tg active:bg-white/10"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
         <div className="h-10 w-10 overflow-hidden rounded-full bg-black/20">
           {match.user?.photo ? (
             <img src={match.user.photo} alt="" className="h-full w-full object-cover" />
