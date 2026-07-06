@@ -78,3 +78,21 @@ export async function notifyRejected(userId: string): Promise<void> {
   const text = `*${t(locale, "bot.rejected.title")}*\n\n${t(locale, "bot.rejected.body")}`;
   await send(user.telegramId, text, openAppButton(locale, "bot.welcome.openButton"));
 }
+
+/** Notify a user that Premium was activated for them (e.g. admin granted it). */
+export async function notifyPremiumGranted(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+  const locale = user.language as Locale;
+  const text = `*${t(locale, "bot.premium.title")}*\n\n${t(locale, "bot.premium.body")}`;
+  await send(user.telegramId, text, openAppButton(locale, "bot.welcome.openButton"));
+}
+
+/** Notify a user that a Boost was activated for them (e.g. admin granted it). */
+export async function notifyBoostGranted(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+  const locale = user.language as Locale;
+  const text = `*${t(locale, "bot.boost.title")}*\n\n${t(locale, "bot.boost.body")}`;
+  await send(user.telegramId, text, openAppButton(locale, "bot.welcome.openButton"));
+}

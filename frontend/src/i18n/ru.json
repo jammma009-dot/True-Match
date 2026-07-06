@@ -88,6 +88,10 @@
   "likeLimit.reset": "Лимит обновится завтра — ещё {limit} лайков.",
   "likeLimit.unlimited": "Безлимитные лайки",
   "likeLimit.close": "Закрыть",
+
+  "rewindPrompt.title": "Предыдущий профиль?",
+  "rewindPrompt.body": "Хотите вернуть пропущенный профиль? Возврат назад доступен в Premium.",
+  "rewindPrompt.cta": "Получить Premium",
   "discover.locked": "Этот раздел откроется после одобрения профиля.",
   "discover.forYou": "Для вас",
   "discover.nearby": "Рядом",

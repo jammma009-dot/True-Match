@@ -90,7 +90,7 @@ export function ProfileScreen() {
       </div>
 
       {/* Stats row */}
-      <div className="mt-4 flex items-center rounded-2xl bg-[var(--tg-secondary-bg-color)] py-3">
+      <div className="mt-4 flex items-center rounded-2xl border border-white/10 bg-[var(--tg-secondary-bg-color)] py-3">
         <Stat value={stats?.views ?? 0} label={t("profile.stat.views")} />
         <StatDivider />
         <Stat value={stats?.likes ?? 0} label={t("profile.stat.likes")} />
@@ -101,7 +101,7 @@ export function ProfileScreen() {
       </div>
 
       {/* Completion bar */}
-      <div className="mt-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-3.5">
+      <div className="mt-3 rounded-2xl border border-white/10 bg-[var(--tg-secondary-bg-color)] px-4 py-3.5">
         <div className="mb-2 flex items-center justify-between text-xs">
           <span className="text-tg">{t("profile.complete")}</span>
           <span className="font-semibold text-brand">{pct}%</span>
@@ -121,7 +121,7 @@ export function ProfileScreen() {
           haptics.impact("light");
           setEditing(true);
         }}
-        className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
+        className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/20 text-brand">
           <Pencil className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function ProfileScreen() {
 
       {/* Details */}
       {profile && (
-        <div className="mt-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] p-4">
+        <div className="mt-3 rounded-2xl border border-white/10 bg-[var(--tg-secondary-bg-color)] p-4">
           <div className="flex flex-wrap gap-2">
             <Badge>
               {profile.gender === "male"
@@ -198,7 +198,7 @@ export function ProfileScreen() {
               haptics.impact("light");
               openTelegramLink(`https://t.me/${contactUsername}`);
             }}
-            className="flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
+            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/20 text-brand">
               <MessageCircle className="h-4 w-4" />
@@ -214,7 +214,7 @@ export function ProfileScreen() {
             haptics.impact("light");
             setShowPremium(true);
           }}
-          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-4 py-3 text-left text-white active:opacity-90"
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/15 bg-gradient-to-r from-brand to-brand-dark px-4 py-3 text-left text-white active:opacity-90"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
             <Crown className="h-4 w-4" />
@@ -230,7 +230,7 @@ export function ProfileScreen() {
             haptics.impact("light");
             setShowPresent(true);
           }}
-          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-pink-500 to-brand px-4 py-3 text-left text-white active:opacity-90"
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/15 bg-gradient-to-r from-pink-500 to-brand px-4 py-3 text-left text-white active:opacity-90"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
             <Gift className="h-4 w-4" />
@@ -252,7 +252,7 @@ export function ProfileScreen() {
         type="button"
         onClick={handleDelete}
         disabled={deleting}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-pass/15 py-3 font-semibold text-pass active:opacity-80 disabled:opacity-50"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-pass/25 bg-pass/15 py-3 font-semibold text-pass active:opacity-80 disabled:opacity-50"
       >
         <Trash2 className="h-5 w-5" />
         {t("profile.delete")}

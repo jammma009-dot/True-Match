@@ -10,6 +10,7 @@ import { PremiumBadge } from "../components/PremiumBadge";
 import { PremiumModal } from "../components/PremiumModal";
 import { PresentModal } from "../components/PresentModal";
 import { LikeLimitModal } from "../components/LikeLimitModal";
+import { RewindPromptModal } from "../components/RewindPromptModal";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -30,6 +31,7 @@ export function DiscoverScreen({
   const [showPremium, setShowPremium] = useState(false);
   const [limitHit, setLimitHit] = useState<number | null>(null);
   const [rewinding, setRewinding] = useState(false);
+  const [showRewindPrompt, setShowRewindPrompt] = useState(false);
   const [giftTarget, setGiftTarget] = useState<PublicProfile | null>(null);
   const presentPrice = me?.settings?.presentPriceStars ?? 100;
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
@@ -136,7 +138,7 @@ export function DiscoverScreen({
     if (rewinding || busyRef.current || leaving) return;
     if (!isPremium) {
       haptics.notify("warning");
-      setShowPremium(true);
+      setShowRewindPrompt(true);
       return;
     }
     setRewinding(true);
@@ -613,6 +615,16 @@ export function DiscoverScreen({
             setShowPremium(true);
           }}
           onClose={() => setLimitHit(null)}
+        />
+      )}
+
+      {showRewindPrompt && (
+        <RewindPromptModal
+          onUpgrade={() => {
+            setShowRewindPrompt(false);
+            setShowPremium(true);
+          }}
+          onClose={() => setShowRewindPrompt(false)}
         />
       )}
 

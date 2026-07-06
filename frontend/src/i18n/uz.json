@@ -88,6 +88,10 @@
   "likeLimit.reset": "Limit ertaga yangilanadi — yana {limit} ta layk olasiz.",
   "likeLimit.unlimited": "Cheksiz layklar",
   "likeLimit.close": "Yopish",
+
+  "rewindPrompt.title": "Oldingi profil?",
+  "rewindPrompt.body": "O'tkazib yuborgan profilni qaytarmoqchimisiz? Ortga qaytish Premium imkoniyati.",
+  "rewindPrompt.cta": "Premium olish",
   "discover.locked": "Profilingiz tasdiqlangach bu bo'lim ochiladi.",
   "discover.forYou": "Siz uchun",
   "discover.nearby": "Yaqin",

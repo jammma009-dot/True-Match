@@ -5,7 +5,7 @@ import { requireAdmin } from "../middleware/admin";
 import { validateBody } from "../middleware/validate";
 import { computeAge, isAdult, MIN_AGE } from "../utils/age";
 import { cityLabel } from "../utils/cities";
-import { notifyApproved, notifyRejected } from "../bot/notify";
+import { notifyApproved, notifyRejected, notifyPremiumGranted, notifyBoostGranted } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 import { getSettings } from "../lib/settings";
 import {
@@ -383,6 +383,8 @@ router.post(
       where: { id: userId },
       data: { premiumUntil },
     });
+    // Tell the user via the bot when Premium is granted.
+    if (days > 0) void notifyPremiumGranted(userId);
     res.json({
       ok: true,
       isPremium: isPremiumActive(updated.premiumUntil),
@@ -417,6 +419,7 @@ router.post(
       where: { id: userId },
       data: { boostUntil },
     });
+    if (days > 0) void notifyBoostGranted(userId);
     res.json({
       ok: true,
       isBoosted: isBoostActive(updated.boostUntil),
