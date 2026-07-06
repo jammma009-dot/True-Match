@@ -19,11 +19,11 @@ body,
 body {
   margin: 0;
   background:
-    /* Pure-black top-center (matches the logo's black bg so its square edges
-       never show), with pink glow kept in the top-left & top-right corners. */
-    radial-gradient(46% 32% at 50% 0%, #000000 52%, rgba(0, 0, 0, 0) 100%),
-    radial-gradient(58% 46% at 0% 0%, rgba(255, 46, 154, 0.22), transparent 64%),
-    radial-gradient(58% 46% at 100% 0%, rgba(255, 46, 154, 0.2), transparent 64%),
+    /* Small black dome at the very top-center only — hides the logo's square
+       edges. All other glows are exactly as before. */
+    radial-gradient(240px 130px at 50% 0%, #000000 50%, rgba(0, 0, 0, 0) 100%),
+    radial-gradient(900px 500px at 100% 100%, rgba(255, 46, 154, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, rgba(255, 46, 154, 0.14), transparent 60%),
     var(--tg-bg-color);
   color: var(--tg-text-color);
   -webkit-tap-highlight-color: transparent;
