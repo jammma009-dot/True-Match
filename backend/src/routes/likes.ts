@@ -48,7 +48,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       status: "approved",
       user: { isBanned: false },
     },
-    include: { photos: true, user: { select: { id: true } } },
+    include: { photos: true, user: { select: { id: true, premiumUntil: true } } },
   });
   const byId = new Map(profiles.map((p) => [p.userId, p]));
 

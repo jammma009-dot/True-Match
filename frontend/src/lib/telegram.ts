@@ -94,6 +94,30 @@ export function openTelegramLink(url: string): void {
   window.open(url, "_blank");
 }
 
+/**
+ * Open a Telegram Stars invoice link. Resolves with the payment status
+ * ("paid" | "cancelled" | "failed" | "pending"). Falls back to opening the
+ * link in a new tab when not inside Telegram.
+ */
+export function openInvoice(
+  url: string,
+): Promise<"paid" | "cancelled" | "failed" | "pending" | "unsupported"> {
+  const wa = webApp();
+  return new Promise((resolve) => {
+    try {
+      if (wa && typeof wa.openInvoice === "function") {
+        wa.openInvoice(url, (status) => resolve(status));
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+    // Not inside Telegram — open the link so the flow isn't a dead end.
+    window.open(url, "_blank");
+    resolve("unsupported");
+  });
+}
+
 /** Best-effort language code from Telegram (used as an initial default). */
 export function getTelegramLanguageCode(): string | undefined {
   return webApp()?.initDataUnsafe?.user?.language_code;

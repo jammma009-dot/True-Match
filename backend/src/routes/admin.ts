@@ -8,6 +8,7 @@ import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 import { getSettings } from "../lib/settings";
+import { DEFAULT_PREMIUM_STARS } from "../lib/premium";
 import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
 
 const router = Router();
@@ -24,12 +25,16 @@ router.get("/settings", async (_req: Request, res: Response) => {
   res.json({
     contactUsername: s.contactUsername,
     paymentUsername: s.paymentUsername,
+    premiumPriceStars: s.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
+    starRecipient: s.starRecipient,
   });
 });
 
 const settingsSchema = z.object({
   contactUsername: z.string().trim().max(64).optional(),
   paymentUsername: z.string().trim().max(64).optional(),
+  premiumPriceStars: z.coerce.number().int().min(1).max(100000).optional(),
+  starRecipient: z.string().trim().max(64).optional(),
 });
 router.post(
   "/settings",
@@ -38,22 +43,23 @@ router.post(
     const data = req.body as z.infer<typeof settingsSchema>;
     // Strip a leading @ if the admin includes it.
     const clean = (v?: string) => (v ? v.replace(/^@/, "").trim() || null : null);
+    const common = {
+      contactUsername: clean(data.contactUsername),
+      paymentUsername: clean(data.paymentUsername),
+      premiumPriceStars: data.premiumPriceStars ?? null,
+      starRecipient: clean(data.starRecipient),
+    };
     const s = await prisma.settings.upsert({
       where: { id: 1 },
-      update: {
-        contactUsername: clean(data.contactUsername),
-        paymentUsername: clean(data.paymentUsername),
-      },
-      create: {
-        id: 1,
-        contactUsername: clean(data.contactUsername),
-        paymentUsername: clean(data.paymentUsername),
-      },
+      update: common,
+      create: { id: 1, ...common },
     });
     res.json({
       ok: true,
       contactUsername: s.contactUsername,
       paymentUsername: s.paymentUsername,
+      premiumPriceStars: s.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
+      starRecipient: s.starRecipient,
     });
   },
 );

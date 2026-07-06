@@ -1,6 +1,7 @@
 import type { Profile, Photo, User } from "@prisma/client";
 import { computeAge } from "./age";
 import { cityLabel } from "./cities";
+import { isPremiumActive } from "../lib/premium";
 
 /**
  * Public-facing profile shape. NOTE: birthdate is never exposed — only the
@@ -19,16 +20,18 @@ export interface PublicProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
+  isPremium: boolean;
   photos: { url: string; position: number }[];
 }
 
 export function toPublicProfile(
-  user: Pick<User, "id">,
+  user: Pick<User, "id" | "premiumUntil">,
   profile: Profile,
   photos: Photo[],
 ): PublicProfile {
   return {
     userId: user.id,
+    isPremium: isPremiumActive(user.premiumUntil),
     name: profile.name,
     age: computeAge(profile.birthdate),
     gender: profile.gender,

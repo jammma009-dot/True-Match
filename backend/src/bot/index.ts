@@ -2,6 +2,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { t, Locale, normalizeLocale } from "../lib/locale";
+import { PREMIUM_DAYS } from "../lib/premium";
 
 /**
  * grammy bot instance. Handles the pre-Mini-App /start flow:
@@ -107,6 +108,57 @@ export async function sendWelcome(chatId: number, locale: Locale): Promise<void>
     });
   }
 }
+
+// ---------- Telegram Stars payments (Premium) ----------
+
+// Approve every pre-checkout query (digital goods are always "in stock").
+bot.on("pre_checkout_query", async (ctx) => {
+  try {
+    await ctx.answerPreCheckoutQuery(true);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[bot] pre_checkout answer failed:", err);
+  }
+});
+
+// On successful payment, activate Premium for the payer.
+bot.on("message:successful_payment", async (ctx) => {
+  const payment = ctx.message.successful_payment;
+  const payload = payment?.invoice_payload ?? "";
+  const match = /^premium:(.+)$/.exec(payload);
+  if (!match) return;
+  const userId = match[1];
+
+  const until = new Date(Date.now() + PREMIUM_DAYS * 86_400_000);
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { premiumUntil: until },
+    });
+
+    // Thank the buyer.
+    const locale = user.language as Locale;
+    await ctx.reply(
+      `*${t(locale, "bot.premium.title")}*\n\n${t(locale, "bot.premium.body")}`,
+      { parse_mode: "Markdown", reply_markup: openAppKeyboard(locale) },
+    ).catch(() => undefined);
+
+    // Optionally notify the configured Star recipient (numeric id only).
+    const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+    const recipient = settings?.starRecipient?.trim();
+    if (recipient && /^\d+$/.test(recipient)) {
+      await bot.api
+        .sendMessage(
+          Number(recipient),
+          `New Premium purchase: ${payment.total_amount} ⭐ (user ${userId}).`,
+        )
+        .catch(() => undefined);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[bot] failed to activate premium:", err);
+  }
+});
 
 // Basic error logging.
 bot.catch((err) => {

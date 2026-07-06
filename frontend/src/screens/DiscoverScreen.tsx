@@ -6,6 +6,7 @@ import { useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { LogoHeader } from "../components/LogoHeader";
 import { FilterModal } from "../components/FilterModal";
+import { PremiumBadge } from "../components/PremiumBadge";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -167,6 +168,7 @@ export function DiscoverScreen({
   }
 
   if (!current) {
+    const filtersActive = minAge > 18 || maxAge < 80 || !!city;
     return (
       <div className="flex h-full flex-col">
         <LogoHeader />
@@ -174,7 +176,24 @@ export function DiscoverScreen({
           <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)]">
             <Sparkles className="h-9 w-9 text-brand" />
           </div>
-          <p className="mb-6 max-w-xs text-tg-hint">{t("discover.empty")}</p>
+          <p className="mb-2 max-w-xs text-tg-hint">{t("discover.empty")}</p>
+          <p className="mb-6 max-w-xs text-sm text-tg-hint/80">
+            {t("discover.emptyFilterHint")}
+          </p>
+          <button
+            onClick={() => {
+              haptics.impact("light");
+              setShowFilter(true);
+            }}
+            className={`mb-3 flex items-center gap-2 rounded-full px-5 py-2.5 font-semibold active:opacity-80 ${
+              filtersActive
+                ? "bg-brand text-white"
+                : "bg-[var(--tg-secondary-bg-color)] text-tg"
+            }`}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {t("discover.adjustFilters")}
+          </button>
           <button
             onClick={() => refetch()}
             className="flex items-center gap-2 rounded-full bg-[var(--tg-secondary-bg-color)] px-5 py-2.5 font-medium text-tg active:opacity-70"
@@ -183,6 +202,20 @@ export function DiscoverScreen({
             {t("common.retry")}
           </button>
         </div>
+
+        {showFilter && (
+          <FilterModal
+            initial={{ minAge, maxAge, scope: feedTab, city: city || undefined }}
+            onApply={(f) => {
+              setFeedTab(f.scope);
+              setMinAge(f.minAge);
+              setMaxAge(f.maxAge);
+              setCity(f.city ?? "");
+              setShowFilter(false);
+            }}
+            onClose={() => setShowFilter(false)}
+          />
+        )}
       </div>
     );
   }
@@ -287,9 +320,10 @@ export function DiscoverScreen({
             <Heart className="h-2.5 w-2.5" fill="currentColor" />
             {t(`intent.${current.intent}`)}
           </div>
-          <div className="flex items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
             <h2 className="text-xl font-extrabold leading-none text-white">{current.name}</h2>
             <span className="text-base font-light text-white/90">{current.age}</span>
+            {current.isPremium && <PremiumBadge />}
           </div>
 
           {/* Core badges — always shown (one row) */}

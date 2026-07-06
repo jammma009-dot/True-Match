@@ -29,10 +29,20 @@ export interface CityRef {
 }
 
 export interface MeResponse {
-  user: { id: string; language: Locale; isBanned: boolean };
+  user: {
+    id: string;
+    language: Locale;
+    isBanned: boolean;
+    isPremium?: boolean;
+    premiumUntil?: string | null;
+  };
   profile: OwnProfile | null;
   stats?: { views: number; likes: number; matches: number; days: number };
-  settings?: { contactUsername: string | null; paymentUsername: string | null };
+  settings?: {
+    contactUsername: string | null;
+    paymentUsername: string | null;
+    premiumPriceStars?: number;
+  };
   reference: {
     cities: CityRef[];
     intents: string[];

@@ -76,7 +76,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     userId: { notIn: Array.from(excludeIds) },
     birthdate: { gte: minBirth, lte: maxBirth },
   };
-  const include = { photos: true, user: { select: { id: true } } };
+  const include = { photos: true, user: { select: { id: true, premiumUntil: true } } };
 
   let ordered;
 

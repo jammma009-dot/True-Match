@@ -75,6 +75,9 @@ model User {
   telegramId BigInt   @unique
   language   Language @default(uz)
   isBanned   Boolean  @default(false)
+  // Premium subscription (bought via Telegram Stars or card). Active while
+  // premiumUntil is in the future.
+  premiumUntil DateTime?
   // Whether the user currently has the Mini App open (for chat notification routing)
   isOnline   Boolean  @default(false)
   lastSeenAt DateTime @default(now())
@@ -216,5 +219,10 @@ model Settings {
   // Telegram usernames (without @) users are forwarded to.
   contactUsername String?
   paymentUsername String?
+  // Premium price in Telegram Stars (XTR). Null → falls back to default.
+  premiumPriceStars Int?
+  // Telegram username OR numeric id of the person notified when someone buys
+  // Premium with Stars (Stars are credited to the bot automatically).
+  starRecipient   String?
   updatedAt       DateTime @updatedAt
 }

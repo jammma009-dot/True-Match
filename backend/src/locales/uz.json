@@ -20,5 +20,7 @@
   "bot.approved.body": "Tabriklaymiz! Endi siz odamlarni ko'rishingiz va suhbatlashishingiz mumkin.",
   "bot.approved.openButton": "🔥 Boshlash",
   "bot.rejected.title": "❌ Anketa tasdiqlanmadi",
-  "bot.rejected.body": "Afsuski, anketangiz tasdiqlanmadi. Iltimos, ilovada qaytadan urinib ko'ring."
+  "bot.rejected.body": "Afsuski, anketangiz tasdiqlanmadi. Iltimos, ilovada qaytadan urinib ko'ring.",
+  "bot.premium.title": "👑 Premium faollashtirildi!",
+  "bot.premium.body": "Rahmat! Premium imkoniyatlaringiz endi ochiq. Ilovani oching va bahridan foydalaning."
 }

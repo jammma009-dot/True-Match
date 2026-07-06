@@ -180,6 +180,14 @@
             <input id="set-contact" type="text" placeholder="e.g. truematch_support" value="${escapeHtml(s.contactUsername || "")}" />
             <label>Payment username — "Pay via card" (Buy Premium)</label>
             <input id="set-payment" type="text" placeholder="e.g. truematch_pay" value="${escapeHtml(s.paymentUsername || "")}" />
+
+            <h2 style="margin:22px 0 0">Premium</h2>
+            <p class="meta">Telegram Stars are credited to the bot automatically on purchase.</p>
+            <label>Premium price (Telegram Stars ⭐)</label>
+            <input id="set-price" type="number" min="1" step="1" placeholder="e.g. 250" value="${s.premiumPriceStars ?? ""}" />
+            <label>Star recipient — Telegram numeric ID to notify on purchase (optional)</label>
+            <input id="set-recipient" type="text" placeholder="e.g. 123456789 (numeric id) — leave blank if unsure" value="${escapeHtml(s.starRecipient || "")}" />
+
             <div class="actions" style="margin-top:16px">
               <button class="primary" onclick="saveSettings()">Save settings</button>
             </div>
@@ -188,10 +196,13 @@
       }
 
       async function saveSettings() {
+        const priceRaw = document.getElementById("set-price").value.trim();
         const body = {
           contactUsername: document.getElementById("set-contact").value.trim(),
           paymentUsername: document.getElementById("set-payment").value.trim(),
+          starRecipient: document.getElementById("set-recipient").value.trim(),
         };
+        if (priceRaw) body.premiumPriceStars = Number(priceRaw);
         const res = await api("/api/admin/settings", { method: "POST", body: JSON.stringify(body) });
         const msg = document.getElementById("settings-msg");
         if (res.ok) {
@@ -199,6 +210,8 @@
           msg.textContent = "Saved ✓";
           document.getElementById("set-contact").value = res.contactUsername || "";
           document.getElementById("set-payment").value = res.paymentUsername || "";
+          document.getElementById("set-price").value = res.premiumPriceStars ?? "";
+          document.getElementById("set-recipient").value = res.starRecipient || "";
         } else {
           msg.style.color = "#e74c3c";
           msg.textContent = "Error: " + (res.error || "failed");

@@ -61,6 +61,7 @@ export interface PublicProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
+  isPremium?: boolean;
   photos: { url: string; position: number }[];
 }
 
@@ -159,6 +160,12 @@ export const api = {
 
   getLikes: () =>
     request<{ likes: PublicProfile[]; newCount: number }>("/api/likes"),
+
+  createPremiumInvoice: () =>
+    request<{ link: string }>("/api/premium/invoice", {
+      method: "POST",
+      body: "{}",
+    }),
 
   markLikesSeen: () =>
     request<{ ok: true }>("/api/likes/seen", { method: "POST", body: "{}" }),

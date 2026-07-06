@@ -8,6 +8,7 @@ import { haptics, openTelegramLink } from "../lib/telegram";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { EditProfileScreen } from "./EditProfileScreen";
 import { PremiumModal } from "../components/PremiumModal";
+import { PremiumBadge } from "../components/PremiumBadge";
 import type { OwnProfile } from "../store/useStore";
 
 /** Rough profile-completeness percentage for the nudge bar. */
@@ -35,6 +36,8 @@ export function ProfileScreen() {
   const [showPremium, setShowPremium] = useState(false);
   const contactUsername = me?.settings?.contactUsername ?? null;
   const paymentUsername = me?.settings?.paymentUsername ?? null;
+  const priceStars = me?.settings?.premiumPriceStars ?? 250;
+  const isPremium = me?.user.isPremium ?? false;
 
   const handleDelete = async () => {
     if (!window.confirm(t("profile.deleteConfirm"))) return;
@@ -75,9 +78,12 @@ export function ProfileScreen() {
             <div className="flex h-full w-full items-center justify-center text-4xl">👤</div>
           )}
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-tg">
-          {profile?.name}
-          {profile ? `, ${profile.age}` : ""}
+        <h1 className="mt-4 flex items-center justify-center gap-2 text-2xl font-bold text-tg">
+          <span>
+            {profile?.name}
+            {profile ? `, ${profile.age}` : ""}
+          </span>
+          {isPremium && <PremiumBadge variant="label" />}
         </h1>
         {profile && (
           <p className="mt-0.5 flex items-center gap-1 text-sm text-tg-hint">
@@ -243,6 +249,16 @@ export function ProfileScreen() {
       {showPremium && (
         <PremiumModal
           paymentUsername={paymentUsername}
+          priceStars={priceStars}
+          isPremium={isPremium}
+          onPaid={() => {
+            // Refresh /api/me so the Premium badge + status appear.
+            queryClient.invalidateQueries({ queryKey: ["me"] });
+            window.setTimeout(
+              () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+              1500,
+            );
+          }}
           onClose={() => setShowPremium(false)}
         />
       )}
