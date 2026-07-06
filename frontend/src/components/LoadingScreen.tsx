@@ -5,9 +5,6 @@
 export function LoadingScreen() {
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-black">
-      {/* Soft pulsing glow behind the logo */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full bg-brand/25 blur-3xl" />
-
       {/* Expanding rings */}
       <span className="loading-ring" />
       <span className="loading-ring" style={{ animationDelay: "1.3s" }} />
