@@ -318,13 +318,13 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
         haptics.select();
         onChange(!on);
       }}
-      className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${
+      className={`inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0.5 transition-colors ${
         on ? "bg-brand" : "bg-white/15"
       }`}
     >
       <span
-        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
-          on ? "translate-x-[22px]" : "translate-x-0.5"
+        className={`h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+          on ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>
