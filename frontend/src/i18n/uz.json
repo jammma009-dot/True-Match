@@ -67,6 +67,12 @@
   "discover.empty": "Hozircha yangi profillar yo'q. Keyinroq qaytib keling!",
   "discover.emptyFilterHint": "Filtrni kengaytirib ko'ring — yosh oralig'i yoki shaharni o'zgartirsangiz, ko'proq odam chiqishi mumkin.",
   "discover.adjustFilters": "Filtrni o'zgartirish",
+
+  "likeLimit.title": "Kunlik layk limiti",
+  "likeLimit.body": "Bugungi layk limiti tugadi (kuniga {limit} ta).",
+  "likeLimit.reset": "Limit ertaga yangilanadi — yana {limit} ta layk olasiz.",
+  "likeLimit.unlimited": "Cheksiz layklar",
+  "likeLimit.close": "Yopish",
   "discover.locked": "Profilingiz tasdiqlangach bu bo'lim ochiladi.",
   "discover.forYou": "Siz uchun",
   "discover.nearby": "Yaqin",

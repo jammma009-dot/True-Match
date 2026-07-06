@@ -67,6 +67,12 @@
   "discover.empty": "Пока новых профилей нет. Загляните позже!",
   "discover.emptyFilterHint": "Попробуйте расширить фильтр — измените возраст или город, возможно, найдётся больше людей.",
   "discover.adjustFilters": "Изменить фильтр",
+
+  "likeLimit.title": "Дневной лимит лайков",
+  "likeLimit.body": "Дневной лимит лайков исчерпан ({limit} в день).",
+  "likeLimit.reset": "Лимит обновится завтра — ещё {limit} лайков.",
+  "likeLimit.unlimited": "Безлимитные лайки",
+  "likeLimit.close": "Закрыть",
   "discover.locked": "Этот раздел откроется после одобрения профиля.",
   "discover.forYou": "Для вас",
   "discover.nearby": "Рядом",

@@ -5,10 +5,17 @@ const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 export class ApiError extends Error {
   status: number;
   code: string;
-  constructor(status: number, code: string, message?: string) {
+  data?: Record<string, unknown>;
+  constructor(
+    status: number,
+    code: string,
+    message?: string,
+    data?: Record<string, unknown>,
+  ) {
     super(message || code);
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -31,13 +38,14 @@ async function request<T>(
 
   if (!res.ok) {
     let code = "request_failed";
+    let data: Record<string, unknown> | undefined;
     try {
-      const data = await res.json();
-      code = data?.error ?? code;
+      data = await res.json();
+      code = (data?.error as string) ?? code;
     } catch {
       /* ignore */
     }
-    throw new ApiError(res.status, code);
+    throw new ApiError(res.status, code, undefined, data);
   }
 
   if (res.status === 204) return undefined as T;

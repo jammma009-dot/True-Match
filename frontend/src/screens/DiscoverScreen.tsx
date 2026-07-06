@@ -8,6 +8,7 @@ import { LogoHeader } from "../components/LogoHeader";
 import { FilterModal } from "../components/FilterModal";
 import { PremiumBadge } from "../components/PremiumBadge";
 import { PremiumModal } from "../components/PremiumModal";
+import { LikeLimitModal } from "../components/LikeLimitModal";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -26,6 +27,7 @@ export function DiscoverScreen({
   const paymentUsername = me?.settings?.paymentUsername ?? null;
   const priceStars = me?.settings?.premiumPriceStars ?? 250;
   const [showPremium, setShowPremium] = useState(false);
+  const [limitHit, setLimitHit] = useState<number | null>(null);
   const [rewinding, setRewinding] = useState(false);
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
   const [minAge, setMinAge] = useState(18);
@@ -103,11 +105,13 @@ export function DiscoverScreen({
         }
       })
       .catch((err) => {
-        // Free daily-like cap reached → prompt to upgrade. The like was NOT
+        // Free daily-like cap reached → show the limit sheet. The like was NOT
         // recorded server-side, so refetching brings the person back.
         if (err instanceof ApiError && err.code === "like_limit") {
           haptics.notify("warning");
-          setShowPremium(true);
+          const lim =
+            typeof err.data?.limit === "number" ? err.data.limit : 20;
+          setLimitHit(lim);
           refetch();
         }
       })
@@ -559,6 +563,17 @@ export function DiscoverScreen({
             setShowFilter(false);
           }}
           onClose={() => setShowFilter(false)}
+        />
+      )}
+
+      {limitHit !== null && (
+        <LikeLimitModal
+          limit={limitHit}
+          onUpgrade={() => {
+            setLimitHit(null);
+            setShowPremium(true);
+          }}
+          onClose={() => setLimitHit(null)}
         />
       )}
 

@@ -9,7 +9,7 @@ import { emitToUser } from "../socket";
 import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { toPublicProfile } from "../utils/serialize";
-import { isPremiumActive, FREE_DAILY_LIKES } from "../lib/premium";
+import { isPremiumActive, FREE_DAILY_LIKES, startOfDayTashkent } from "../lib/premium";
 import { SwipeAction, Prisma } from "@prisma/client";
 
 const router = Router();
@@ -105,8 +105,8 @@ router.post(
     // Free-tier daily LIKE cap — Premium users have unlimited likes.
     const premium = isPremiumActive(user.premiumUntil);
     if (action === "like" && !premium) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
+      // Resets at Tashkent midnight → free users get a fresh 20 likes each day.
+      const startOfDay = startOfDayTashkent();
       // Only count NEW likes today (not a re-like of the same person).
       const alreadyLiked = await prisma.swipe.findUnique({
         where: {
