@@ -4,7 +4,10 @@
  */
 export function LoadingScreen() {
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-black">
+    <div
+      className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden"
+      style={{ backgroundColor: "#050608" }}
+    >
       {/* Expanding rings */}
       <span className="loading-ring" />
       <span className="loading-ring" style={{ animationDelay: "1.3s" }} />

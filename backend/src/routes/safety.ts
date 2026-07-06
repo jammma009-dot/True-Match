@@ -78,6 +78,17 @@ router.post(
       update: {},
     });
 
+    // Remove any match between the two users (messages cascade) so the blocked
+    // person disappears from BOTH users' chat lists immediately.
+    await prisma.match.deleteMany({
+      where: {
+        OR: [
+          { userAId: user.id, userBId: targetUserId },
+          { userAId: targetUserId, userBId: user.id },
+        ],
+      },
+    });
+
     res.status(201).json({ ok: true });
   },
 );
