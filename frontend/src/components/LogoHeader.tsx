@@ -1,7 +1,7 @@
 /** Centered True Match wordmark — same size on every page that shows it. */
 export function LogoHeader() {
   return (
-    <div className="flex flex-shrink-0 items-center justify-center pb-1.5 pt-2">
+    <div className="flex flex-shrink-0 items-center justify-center pb-1 pt-1">
       <img
         src="/logo-wordmark.png"
         alt="True Match"

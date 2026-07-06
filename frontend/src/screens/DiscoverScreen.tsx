@@ -284,7 +284,7 @@ export function DiscoverScreen({
   const nopeOpacity = leaving === "pass" ? 1 : Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
 
   return (
-    <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-3 pb-3 pt-2">
+    <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-3 pb-2">
       {/* Brand logo header (same LogoHeader used across the app) */}
       <LogoHeader />
 
@@ -331,6 +331,15 @@ export function DiscoverScreen({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setShowFilter(true)}
+            aria-label="filters"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur active:bg-black/70"
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+          </button>
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -482,31 +491,20 @@ export function DiscoverScreen({
         </div>
       </div>
 
-      {/* Filter button (right-center) */}
-      <button
-        type="button"
-        onClick={() => setShowFilter(true)}
-        onPointerDown={(e) => e.stopPropagation()}
-        aria-label="filters"
-        className="absolute right-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur active:scale-90"
-      >
-        <SlidersHorizontal className="h-5 w-5" />
-      </button>
+      {/* Action bar — rewind · pass pill · gift · like pill */}
+      <div className="absolute inset-x-0 bottom-4 z-40 flex items-center gap-2 px-4">
+        {/* Rewind (go back) — Premium perk */}
+        <button
+          type="button"
+          aria-label="rewind"
+          onClick={doRewind}
+          onPointerDown={(e) => e.stopPropagation()}
+          disabled={rewinding}
+          className="flex h-12 w-12 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-white/12 text-amber-300 backdrop-blur transition-transform active:scale-90 disabled:opacity-50"
+        >
+          <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
+        </button>
 
-      {/* Rewind button (left-center) — Premium perk */}
-      <button
-        type="button"
-        onClick={doRewind}
-        onPointerDown={(e) => e.stopPropagation()}
-        disabled={rewinding}
-        aria-label="rewind"
-        className="absolute left-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-amber-300 shadow-lg backdrop-blur active:scale-90 disabled:opacity-50"
-      >
-        <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
-      </button>
-
-      {/* Action bar — white pill (pass) · dark circle (gift) · pink pill (like) */}
-      <div className="absolute inset-x-0 bottom-4 z-40 flex items-center gap-2.5 px-5">
         <button
           type="button"
           aria-label="pass"
