@@ -5,7 +5,7 @@ import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { Locale } from "../i18n";
 import { haptics } from "../lib/telegram";
-import { INTEREST_EMOJI, SMOKING_EMOJI, DRINKING_EMOJI } from "../lib/profileMeta";
+import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { EditProfileScreen } from "./EditProfileScreen";
 import type { OwnProfile } from "../store/useStore";
 
@@ -139,12 +139,12 @@ export function ProfileScreen() {
             )}
             {profile.smoking && (
               <Badge>
-                {SMOKING_EMOJI} {t(`habit.${profile.smoking}`)}
+                <SmokingIcon className="h-3.5 w-3.5" /> {t(`habit.${profile.smoking}`)}
               </Badge>
             )}
             {profile.drinking && (
               <Badge>
-                {DRINKING_EMOJI} {t(`habit.${profile.drinking}`)}
+                <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${profile.drinking}`)}
               </Badge>
             )}
             <Badge>{t(`intent.${profile.intent}`)}</Badge>
@@ -158,11 +158,14 @@ export function ProfileScreen() {
                 {t("profile.interests")}
               </p>
               <div className="flex flex-wrap gap-2">
-                {profile.interests.map((key) => (
-                  <Badge key={key}>
-                    {INTEREST_EMOJI[key] ?? "•"} {t(`interest.${key}`)}
-                  </Badge>
-                ))}
+                {profile.interests.map((key) => {
+                  const Icon = INTEREST_ICON[key];
+                  return (
+                    <Badge key={key}>
+                      {Icon && <Icon className="h-3.5 w-3.5" />} {t(`interest.${key}`)}
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -7,17 +7,10 @@ import { showBackButton, hideBackButton, haptics } from "../../lib/telegram";
 import { DatePicker, DateValue } from "./DatePicker";
 import { CitySelect } from "./CitySelect";
 import { PhotoGrid, UploadedPhoto } from "./PhotoGrid";
+import { GENDER_ICON, INTENT_ICON } from "../../lib/profileMeta";
 
 const STEPS = ["name", "birthdate", "gender", "intent", "city", "photos"] as const;
 type Step = (typeof STEPS)[number];
-
-const INTENT_ICONS: Record<string, string> = {
-  serious: "❤️",
-  marriage: "💍",
-  flirt: "😉",
-  friendship: "💬",
-  unsure: "🤔",
-};
 
 function computeAge(d: DateValue): number {
   const birth = new Date(d.year, d.month - 1, d.day);
@@ -179,23 +172,26 @@ export function OnboardingWizard() {
         {step === "gender" && (
           <StepShell title={t("onboarding.gender.title")}>
             <div className="grid grid-cols-2 gap-4">
-              {(["male", "female"] as const).map((g) => (
-                <button
-                  key={g}
-                  onClick={() => {
-                    haptics.select();
-                    setGender(g);
-                  }}
-                  className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-lg font-semibold ${
-                    gender === g
-                      ? "bg-brand text-white"
-                      : "bg-[var(--tg-secondary-bg-color)] text-tg"
-                  }`}
-                >
-                  <span className="mb-2 text-4xl">{g === "male" ? "👨" : "👩"}</span>
-                  {t(`onboarding.gender.${g}`)}
-                </button>
-              ))}
+              {(["male", "female"] as const).map((g) => {
+                const Icon = GENDER_ICON[g];
+                return (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      haptics.select();
+                      setGender(g);
+                    }}
+                    className={`flex aspect-square flex-col items-center justify-center rounded-2xl text-lg font-semibold ${
+                      gender === g
+                        ? "bg-brand text-white"
+                        : "bg-[var(--tg-secondary-bg-color)] text-tg"
+                    }`}
+                  >
+                    <Icon className="mb-2 h-10 w-10" strokeWidth={1.75} />
+                    {t(`onboarding.gender.${g}`)}
+                  </button>
+                );
+              })}
             </div>
             <p className="mt-4 text-sm text-tg-hint">
               {t("onboarding.gender.warning")}
@@ -206,24 +202,27 @@ export function OnboardingWizard() {
         {step === "intent" && (
           <StepShell title={t("onboarding.intent.title")}>
             <div className="space-y-3">
-              {intents.map((it) => (
-                <button
-                  key={it}
-                  onClick={() => {
-                    haptics.select();
-                    setIntent(it);
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-4 text-left ${
-                    intent === it
-                      ? "bg-brand text-white"
-                      : "bg-[var(--tg-secondary-bg-color)] text-tg"
-                  }`}
-                >
-                  <span className="text-2xl">{INTENT_ICONS[it] ?? "•"}</span>
-                  <span className="flex-1">{t(`intent.${it}`)}</span>
-                  {intent === it && <span>✓</span>}
-                </button>
-              ))}
+              {intents.map((it) => {
+                const Icon = INTENT_ICON[it];
+                return (
+                  <button
+                    key={it}
+                    onClick={() => {
+                      haptics.select();
+                      setIntent(it);
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-4 text-left ${
+                      intent === it
+                        ? "bg-brand text-white"
+                        : "bg-[var(--tg-secondary-bg-color)] text-tg"
+                    }`}
+                  >
+                    {Icon && <Icon className="h-6 w-6" />}
+                    <span className="flex-1">{t(`intent.${it}`)}</span>
+                    {intent === it && <span>✓</span>}
+                  </button>
+                );
+              })}
             </div>
           </StepShell>
         )}

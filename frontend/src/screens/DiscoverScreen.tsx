@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler } from "lucide-react";
 import { api, PublicProfile, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
-import { INTEREST_EMOJI, SMOKING_EMOJI, DRINKING_EMOJI } from "../lib/profileMeta";
+import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { LogoHeader } from "../components/LogoHeader";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
@@ -188,15 +188,8 @@ export function DiscoverScreen({
 
   return (
     <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-3 pb-3 pt-2">
-      {/* Brand logo header — solid wordmark (black bg blends into the app) */}
-      <div className="flex flex-shrink-0 items-center justify-center pb-1 pt-0.5">
-        <img
-          src="/logo-wordmark.png"
-          alt="True Match"
-          draggable={false}
-          className="h-10 w-auto object-contain"
-        />
-      </div>
+      {/* Brand logo header (same LogoHeader used across the app) */}
+      <LogoHeader />
 
       {/* Swipe area */}
       <div className="relative min-h-0 flex-1">
@@ -301,27 +294,30 @@ export function DiscoverScreen({
               </span>
             )}
             {current.smoking && (
-              <span className="rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                {SMOKING_EMOJI} {t(`habit.${current.smoking}`)}
+              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                <SmokingIcon className="h-3.5 w-3.5" /> {t(`habit.${current.smoking}`)}
               </span>
             )}
             {current.drinking && (
-              <span className="rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                {DRINKING_EMOJI} {t(`habit.${current.drinking}`)}
+              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${current.drinking}`)}
               </span>
             )}
           </div>
 
           {current.interests.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {current.interests.slice(0, 6).map((key) => (
-                <span
-                  key={key}
-                  className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur"
-                >
-                  {INTEREST_EMOJI[key] ?? "•"} {t(`interest.${key}`)}
-                </span>
-              ))}
+              {current.interests.slice(0, 6).map((key) => {
+                const Icon = INTEREST_ICON[key];
+                return (
+                  <span
+                    key={key}
+                    className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur"
+                  >
+                    {Icon && <Icon className="h-3.5 w-3.5" />} {t(`interest.${key}`)}
+                  </span>
+                );
+              })}
             </div>
           )}
 
@@ -343,14 +339,16 @@ export function DiscoverScreen({
           <HeartCrack className="h-7 w-7" strokeWidth={2.5} />
         </button>
 
-        {/* Gift / super-like — disabled ("coming soon") */}
+        {/* Gift / super-like — disabled ("coming soon"), with shine + flip */}
         <button
           type="button"
           disabled
           title={t("discover.gift")}
-          className="flex h-14 w-14 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-white/70 shadow-lg"
+          className="gift-shine flex h-14 w-14 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-amber-300 shadow-lg"
         >
-          <Gift className="h-5 w-5" />
+          <span className="gift-flip">
+            <Gift className="h-5 w-5" />
+          </span>
         </button>
 
         <button

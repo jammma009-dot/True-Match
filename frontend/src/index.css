@@ -49,65 +49,131 @@ body {
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -20%; /* larger than viewport so the drift never reveals edges */
   z-index: -1;
   pointer-events: none;
   background-repeat: repeat;
   background-image:
-    radial-gradient(1px 1px at 30px 40px, #ffffff, transparent),
-    radial-gradient(1px 1px at 120px 90px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 70px 160px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.5px 1.5px at 170px 30px, #ffffff, transparent),
-    radial-gradient(1px 1px at 190px 140px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 30px 40px, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 120px 90px, #ffffff, transparent),
+    radial-gradient(1px 1px at 70px 160px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 170px 30px, #ffffff, transparent),
+    radial-gradient(1px 1px at 190px 140px, rgba(255, 255, 255, 0.85), transparent),
     radial-gradient(2px 2px at 250px 120px, #ffffff, transparent),
-    radial-gradient(1px 1px at 60px 250px, rgba(255, 255, 255, 0.75), transparent),
-    radial-gradient(1px 1px at 300px 300px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 60px 250px, #ffffff, transparent),
+    radial-gradient(1px 1px at 300px 300px, rgba(255, 255, 255, 0.85), transparent),
     radial-gradient(1.5px 1.5px at 220px 200px, #ffffff, transparent),
-    radial-gradient(1px 1px at 130px 60px, rgba(255, 255, 255, 0.65), transparent),
-    radial-gradient(1px 1px at 40px 220px, rgba(255, 255, 255, 0.7), transparent);
+    radial-gradient(1px 1px at 130px 60px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 40px 220px, #ffffff, transparent);
   background-size:
     200px 200px, 200px 200px, 200px 200px, 200px 200px, 200px 200px,
     340px 340px, 340px 340px, 340px 340px,
     270px 270px, 270px 270px, 270px 270px;
-  animation: twinkleA 6s ease-in-out infinite;
+  animation:
+    twinkleA 4s ease-in-out infinite,
+    driftA 55s ease-in-out infinite alternate;
 }
 
-/* Second, sparser layer of brighter stars twinkling out of phase, so the
-   flicker looks gentle and natural rather than uniform. */
+/* Second, sparser layer of brighter stars twinkling + drifting out of phase. */
 body::after {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -20%;
   z-index: -1;
   pointer-events: none;
   background-repeat: repeat;
   background-image:
-    radial-gradient(1.5px 1.5px at 90px 70px, #ffffff, transparent),
-    radial-gradient(2px 2px at 260px 200px, #ffffff, transparent),
-    radial-gradient(1.5px 1.5px at 150px 300px, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(2px 2px at 330px 90px, #ffffff, transparent),
-    radial-gradient(1.5px 1.5px at 40px 330px, rgba(255, 255, 255, 0.85), transparent);
-  background-size: 380px 380px, 380px 380px, 380px 380px, 380px 380px, 380px 380px;
-  animation: twinkleB 8.5s ease-in-out infinite;
-  animation-delay: 1.5s;
+    radial-gradient(2px 2px at 90px 70px, #ffffff, transparent),
+    radial-gradient(2.5px 2.5px at 260px 200px, #ffffff, transparent),
+    radial-gradient(2px 2px at 150px 300px, #ffffff, transparent),
+    radial-gradient(2.5px 2.5px at 330px 90px, #ffffff, transparent),
+    radial-gradient(2px 2px at 40px 330px, #ffffff, transparent);
+  background-size: 360px 360px, 360px 360px, 360px 360px, 360px 360px, 360px 360px;
+  animation:
+    twinkleB 5.5s ease-in-out infinite,
+    driftB 70s ease-in-out infinite alternate;
+  animation-delay: 1s, 0s;
 }
 
 @keyframes twinkleA {
   0%,
   100% {
-    opacity: 0.32;
+    opacity: 0.55;
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.95;
   }
 }
 @keyframes twinkleB {
   0%,
   100% {
-    opacity: 0.15;
+    opacity: 0.4;
   }
   50% {
-    opacity: 0.7;
+    opacity: 1;
+  }
+}
+@keyframes driftA {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(3.5%, -4.5%);
+  }
+}
+@keyframes driftB {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-4.5%, 3.5%);
+  }
+}
+
+/* Gift button: shimmer sweep + periodic flip. */
+.gift-shine {
+  position: relative;
+  overflow: hidden;
+}
+.gift-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+  transform: translateX(-160%) skewX(-15deg);
+  animation: giftShine 3.5s ease-in-out infinite;
+}
+@keyframes giftShine {
+  0% {
+    transform: translateX(-160%) skewX(-15deg);
+  }
+  55%,
+  100% {
+    transform: translateX(280%) skewX(-15deg);
+  }
+}
+.gift-flip {
+  display: inline-flex;
+  animation: giftFlip 3.5s ease-in-out infinite;
+}
+@keyframes giftFlip {
+  0%,
+  65% {
+    transform: rotateY(0deg);
+  }
+  82% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
   }
 }
 

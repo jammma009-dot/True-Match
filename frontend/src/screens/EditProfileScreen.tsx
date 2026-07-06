@@ -3,19 +3,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Ruler } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
-import { INTEREST_EMOJI, SMOKING_EMOJI, DRINKING_EMOJI } from "../lib/profileMeta";
+import { INTEREST_ICON, INTENT_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { showBackButton, hideBackButton, haptics } from "../lib/telegram";
 import { CitySelect } from "./onboarding/CitySelect";
 
 const MAX_INTERESTS = 10;
-
-const INTENT_ICONS: Record<string, string> = {
-  serious: "❤️",
-  marriage: "💍",
-  flirt: "😉",
-  friendship: "💬",
-  unsure: "🤔",
-};
 
 /**
  * Full-screen profile editor. Lets the user set bio, height, interests,
@@ -152,6 +144,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
           <div className="flex flex-wrap gap-2">
             {(ref?.interests ?? []).map((key) => {
               const active = interests.includes(key);
+              const Icon = INTEREST_ICON[key];
               return (
                 <button
                   key={key}
@@ -163,7 +156,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
                       : "bg-[var(--tg-secondary-bg-color)] text-tg"
                   }`}
                 >
-                  <span>{INTEREST_EMOJI[key] ?? "•"}</span>
+                  {Icon && <Icon className="h-4 w-4" />}
                   {t(`interest.${key}`)}
                 </button>
               );
@@ -172,7 +165,13 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         </Field>
 
         {/* Smoking */}
-        <Field label={`${SMOKING_EMOJI} ${t("edit.smoking")}`}>
+        <Field
+          label={
+            <span className="flex items-center gap-1.5">
+              <SmokingIcon className="h-4 w-4" /> {t("edit.smoking")}
+            </span>
+          }
+        >
           <HabitPicker
             value={smoking}
             options={ref?.habits ?? ["never", "sometimes", "often"]}
@@ -182,7 +181,13 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         </Field>
 
         {/* Drinking */}
-        <Field label={`${DRINKING_EMOJI} ${t("edit.drinking")}`}>
+        <Field
+          label={
+            <span className="flex items-center gap-1.5">
+              <DrinkingIcon className="h-4 w-4" /> {t("edit.drinking")}
+            </span>
+          }
+        >
           <HabitPicker
             value={drinking}
             options={ref?.habits ?? ["never", "sometimes", "often"]}
@@ -194,23 +199,26 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         {/* Intent */}
         <Field label={t("edit.intent")}>
           <div className="space-y-2">
-            {(ref?.intents ?? []).map((it) => (
-              <button
-                key={it}
-                type="button"
-                onClick={() => {
-                  haptics.select();
-                  setIntent(it);
-                }}
-                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left ${
-                  intent === it ? "bg-brand text-white" : "bg-[var(--tg-secondary-bg-color)] text-tg"
-                }`}
-              >
-                <span className="text-xl">{INTENT_ICONS[it] ?? "•"}</span>
-                <span className="flex-1">{t(`intent.${it}`)}</span>
-                {intent === it && <span>✓</span>}
-              </button>
-            ))}
+            {(ref?.intents ?? []).map((it) => {
+              const Icon = INTENT_ICON[it];
+              return (
+                <button
+                  key={it}
+                  type="button"
+                  onClick={() => {
+                    haptics.select();
+                    setIntent(it);
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left ${
+                    intent === it ? "bg-brand text-white" : "bg-[var(--tg-secondary-bg-color)] text-tg"
+                  }`}
+                >
+                  {Icon && <Icon className="h-5 w-5" />}
+                  <span className="flex-1">{t(`intent.${it}`)}</span>
+                  {intent === it && <span>✓</span>}
+                </button>
+              );
+            })}
           </div>
         </Field>
 
@@ -223,7 +231,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <p className="mb-2 text-sm font-semibold text-tg-hint">{label}</p>
