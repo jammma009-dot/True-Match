@@ -99,7 +99,7 @@ export function FilterModal({
           <div className="flex flex-wrap gap-2">
             {chip("all", t("filter.allCities"), <Globe className="h-4 w-4" />)}
             {chip("nearby", t("filter.nearby"), <MapPin className="h-4 w-4" />)}
-            {cities.map((c) => chip(c.value, c.label))}
+            {cities.map((c) => chip(c.value, t(`city.${c.value}`)))}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Ruler } from "lucide-react";
+import { ChevronLeft, Ruler, GraduationCap, Briefcase } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { INTEREST_ICON, INTENT_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
@@ -34,6 +34,10 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
       .filter((p) => p.key)
       .map((p) => ({ key: p.key as string, url: p.url })),
   );
+  const [studyOn, setStudyOn] = useState<boolean>(!!profile?.education);
+  const [studyText, setStudyText] = useState(profile?.education ?? "");
+  const [workOn, setWorkOn] = useState<boolean>(!!profile?.work);
+  const [workText, setWorkText] = useState(profile?.work ?? "");
   const [saving, setSaving] = useState(false);
   const [photoError, setPhotoError] = useState(false);
 
@@ -75,6 +79,8 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         smoking,
         drinking,
         interests,
+        education: studyOn ? studyText.trim() : null,
+        work: workOn ? workText.trim() : null,
       });
       await api.setPhotos(photos.map((p) => ({ key: p.key, url: p.url })));
       haptics.notify("success");
@@ -218,6 +224,46 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
           />
         </Field>
 
+        {/* Study */}
+        <Field
+          label={
+            <span className="flex items-center gap-1.5">
+              <GraduationCap className="h-4 w-4" /> {t("edit.study")}
+            </span>
+          }
+        >
+          <Toggle on={studyOn} onChange={setStudyOn} />
+          {studyOn && (
+            <input
+              className="mt-2 w-full rounded-xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-tg outline-none placeholder:text-tg-hint"
+              placeholder={t("edit.studyPlace")}
+              value={studyText}
+              maxLength={100}
+              onChange={(e) => setStudyText(e.target.value)}
+            />
+          )}
+        </Field>
+
+        {/* Work */}
+        <Field
+          label={
+            <span className="flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4" /> {t("edit.work")}
+            </span>
+          }
+        >
+          <Toggle on={workOn} onChange={setWorkOn} />
+          {workOn && (
+            <input
+              className="mt-2 w-full rounded-xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-tg outline-none placeholder:text-tg-hint"
+              placeholder={t("edit.workPlace")}
+              value={workText}
+              maxLength={100}
+              onChange={(e) => setWorkText(e.target.value)}
+            />
+          )}
+        </Field>
+
         {/* Intent */}
         <Field label={t("edit.intent")}>
           <div className="space-y-2">
@@ -259,6 +305,29 @@ function Field({ label, children }: { label: React.ReactNode; children: React.Re
       <p className="mb-2 text-sm font-semibold text-tg-hint">{label}</p>
       {children}
     </div>
+  );
+}
+
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => {
+        haptics.select();
+        onChange(!on);
+      }}
+      className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${
+        on ? "bg-brand" : "bg-white/15"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
+          on ? "translate-x-[22px]" : "translate-x-0.5"
+        }`}
+      />
+    </button>
   );
 }
 

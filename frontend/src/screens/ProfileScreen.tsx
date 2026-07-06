@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { MapPin, Ruler, Pencil, ChevronRight, Trash2, MessageCircle, Crown } from "lucide-react";
+import { MapPin, Ruler, Pencil, ChevronRight, Trash2, MessageCircle, Crown, GraduationCap, Briefcase } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { haptics, openTelegramLink } from "../lib/telegram";
@@ -84,7 +84,7 @@ export function ProfileScreen() {
         </h1>
         {profile && (
           <p className="mt-0.5 flex items-center gap-1 text-sm text-tg-hint">
-            <MapPin className="h-3.5 w-3.5" /> {profile.cityLabel}
+            <MapPin className="h-3.5 w-3.5" /> {t(`city.${profile.city}`)}
           </p>
         )}
       </div>
@@ -152,6 +152,16 @@ export function ProfileScreen() {
             {profile.drinking && (
               <Badge>
                 <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${profile.drinking}`)}
+              </Badge>
+            )}
+            {profile.work && (
+              <Badge tone="brand">
+                <Briefcase className="h-3.5 w-3.5" /> {t("profile.workLabel")}: {profile.work}
+              </Badge>
+            )}
+            {profile.education && (
+              <Badge tone="brand">
+                <GraduationCap className="h-3.5 w-3.5" /> {t("profile.studyLabel")}: {profile.education}
               </Badge>
             )}
             <Badge>{t(`intent.${profile.intent}`)}</Badge>

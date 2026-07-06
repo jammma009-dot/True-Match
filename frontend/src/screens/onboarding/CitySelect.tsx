@@ -18,7 +18,7 @@ export function CitySelect({
   const [query, setQuery] = useState("");
 
   const filtered = cities.filter((c) =>
-    c.label.toLowerCase().includes(query.trim().toLowerCase()),
+    t(`city.${c.value}`).toLowerCase().includes(query.trim().toLowerCase()),
   );
 
   return (
@@ -45,7 +45,7 @@ export function CitySelect({
                   : "bg-[var(--tg-secondary-bg-color)] text-tg"
               }`}
             >
-              <span>{c.label}</span>
+              <span>{t(`city.${c.value}`)}</span>
               {selected && <span>✓</span>}
             </button>
           );

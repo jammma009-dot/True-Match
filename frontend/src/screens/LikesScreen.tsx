@@ -144,7 +144,7 @@ export function LikesScreen({
                       {p.name}, {p.age}
                     </p>
                     <p className="flex items-center gap-1 text-xs text-white/75">
-                      <MapPin className="h-3 w-3" /> {p.cityLabel}
+                      <MapPin className="h-3 w-3" /> {t(`city.${p.city}`)}
                     </p>
                   </>
                 ) : (

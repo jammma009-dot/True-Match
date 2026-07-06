@@ -127,6 +127,8 @@ const editSchema = z.object({
   smoking: z.nativeEnum(Habit).nullable().optional(),
   drinking: z.nativeEnum(Habit).nullable().optional(),
   interests: z.array(z.string()).max(20).optional(),
+  education: z.string().trim().max(100).nullable().optional(),
+  work: z.string().trim().max(100).nullable().optional(),
 });
 
 router.patch(
@@ -161,6 +163,8 @@ router.patch(
         ...(data.smoking !== undefined ? { smoking: data.smoking } : {}),
         ...(data.drinking !== undefined ? { drinking: data.drinking } : {}),
         ...(interests !== undefined ? { interests } : {}),
+        ...(data.education !== undefined ? { education: data.education || null } : {}),
+        ...(data.work !== undefined ? { work: data.work || null } : {}),
       },
       include: { photos: true },
     });

@@ -20,6 +20,8 @@ export interface OwnProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
+  education: string | null;
+  work: string | null;
   photos: { id: string; url: string; position: number; key?: string }[];
 }
 

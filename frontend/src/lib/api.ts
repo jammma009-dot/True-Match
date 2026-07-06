@@ -69,6 +69,8 @@ export interface PublicProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
+  education: string | null;
+  work: string | null;
   isPremium?: boolean;
   photos: { url: string; position: number }[];
 }
@@ -82,6 +84,8 @@ export interface UpdateProfilePayload {
   smoking?: string | null;
   drinking?: string | null;
   interests?: string[];
+  education?: string | null;
+  work?: string | null;
 }
 
 export interface MatchListItem {

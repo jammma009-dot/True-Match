@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MoreVertical, Ruler, SlidersHorizontal, RotateCcw, GraduationCap, Briefcase } from "lucide-react";
 import { api, ApiError, PublicProfile, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
@@ -393,7 +393,7 @@ export function DiscoverScreen({
           {/* Core badges — always shown (one row) */}
           <div className="mt-1.5 flex flex-wrap gap-1">
             <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-              <MapPin className="h-2.5 w-2.5" /> {current.cityLabel}
+              <MapPin className="h-2.5 w-2.5" /> {t(`city.${current.city}`)}
             </span>
             <span className="rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
               {current.gender === "male"
@@ -406,6 +406,22 @@ export function DiscoverScreen({
               </span>
             )}
           </div>
+
+          {/* Work / Study — distinct coloured badges (icon differentiates) */}
+          {(current.work || current.education) && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {current.work && (
+                <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/25 px-2 py-0.5 text-[10px] font-semibold text-amber-100 backdrop-blur">
+                  <Briefcase className="h-2.5 w-2.5" /> {t("profile.workLabel")}: {current.work}
+                </span>
+              )}
+              {current.education && (
+                <span className="flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/25 px-2 py-0.5 text-[10px] font-semibold text-sky-100 backdrop-blur">
+                  <GraduationCap className="h-2.5 w-2.5" /> {t("profile.studyLabel")}: {current.education}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Preview (collapsed): first 2 interests + a one-line bio */}
           {!expanded && (

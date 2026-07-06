@@ -20,6 +20,8 @@ export interface PublicProfile {
   smoking: string | null;
   drinking: string | null;
   interests: string[];
+  education: string | null;
+  work: string | null;
   isPremium: boolean;
   photos: { url: string; position: number }[];
 }
@@ -43,6 +45,8 @@ export function toPublicProfile(
     smoking: profile.smoking ?? null,
     drinking: profile.drinking ?? null,
     interests: profile.interests ?? [],
+    education: profile.education ?? null,
+    work: profile.work ?? null,
     photos: photos
       .sort((a, b) => a.position - b.position)
       .map((p) => ({ url: p.url, position: p.position })),
@@ -71,6 +75,8 @@ export function toOwnProfile(profile: Profile, photos: Photo[]) {
     smoking: profile.smoking ?? null,
     drinking: profile.drinking ?? null,
     interests: profile.interests ?? [],
+    education: profile.education ?? null,
+    work: profile.work ?? null,
     photos: photos
       .sort((a, b) => a.position - b.position)
       .map((p) => ({ id: p.id, url: p.url, position: p.position, key: p.key })),

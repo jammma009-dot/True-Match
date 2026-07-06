@@ -125,6 +125,9 @@ model Profile {
   smoking   Habit?
   drinking  Habit?
   interests String[] @default([])
+  // Optional "I study at ..." / "I work at ..." free-text fields.
+  education String?
+  work      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

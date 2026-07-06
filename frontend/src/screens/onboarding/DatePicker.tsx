@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useT } from "../../store/useStore";
+import { useStore, useT } from "../../store/useStore";
 import { Button } from "../../components/ui";
 import { haptics } from "../../lib/telegram";
 
@@ -9,10 +9,16 @@ export interface DateValue {
   year: number;
 }
 
-const MONTHS_UZ = [
-  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
-  "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
-];
+const MONTHS: Record<string, string[]> = {
+  uz: [
+    "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+    "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
+  ],
+  ru: [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+  ],
+};
 
 function range(from: number, to: number): number[] {
   const out: number[] = [];
@@ -35,6 +41,8 @@ export function DatePicker({
   onClose: () => void;
 }) {
   const t = useT();
+  const locale = useStore((s) => s.language);
+  const months = MONTHS[locale] ?? MONTHS.uz;
   const now = new Date();
   const [day, setDay] = useState(value?.day ?? 1);
   const [month, setMonth] = useState(value?.month ?? 1);
@@ -66,7 +74,7 @@ export function DatePicker({
             values={range(1, 12)}
             value={month}
             onChange={setMonth}
-            format={(m) => MONTHS_UZ[m - 1]}
+            format={(m) => months[m - 1]}
             label={t("onboarding.birthdate.month")}
             wide
           />

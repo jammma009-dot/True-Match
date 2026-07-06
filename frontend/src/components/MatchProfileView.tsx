@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MapPin, Ruler, Heart, MessageCircle, Gift } from "lucide-react";
+import { ChevronLeft, MapPin, Ruler, Heart, MessageCircle, Gift, GraduationCap, Briefcase } from "lucide-react";
 import { api } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
@@ -110,7 +110,7 @@ export function MatchProfileView({
             {/* Details */}
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge>
-                <MapPin className="h-3.5 w-3.5" /> {p.cityLabel}
+                <MapPin className="h-3.5 w-3.5" /> {t(`city.${p.city}`)}
               </Badge>
               <Badge>
                 {p.gender === "male" ? t("onboarding.gender.male") : t("onboarding.gender.female")}
@@ -128,6 +128,16 @@ export function MatchProfileView({
               {p.drinking && (
                 <Badge>
                   <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${p.drinking}`)}
+                </Badge>
+              )}
+              {p.work && (
+                <Badge tone="brand">
+                  <Briefcase className="h-3.5 w-3.5" /> {t("profile.workLabel")}: {p.work}
+                </Badge>
+              )}
+              {p.education && (
+                <Badge tone="brand">
+                  <GraduationCap className="h-3.5 w-3.5" /> {t("profile.studyLabel")}: {p.education}
                 </Badge>
               )}
             </div>
