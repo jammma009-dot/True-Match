@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoreVertical, Send } from "lucide-react";
 import { api, ChatMessage, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { getSocket } from "../lib/socket";
@@ -96,10 +97,11 @@ export function ChatScreen({
           <p className="font-semibold text-tg">{match.user?.name ?? "—"}</p>
         </div>
         <button
+          type="button"
           onClick={() => setShowReport(true)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-tg"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-tg active:bg-black/30"
         >
-          ⋮
+          <MoreVertical className="h-5 w-5" />
         </button>
       </div>
 
@@ -140,11 +142,12 @@ export function ChatScreen({
           onKeyDown={(e) => e.key === "Enter" && send()}
         />
         <button
+          type="button"
           onClick={send}
           disabled={!text.trim()}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-xl text-white disabled:opacity-40"
+          className="flex h-11 w-11 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark text-white transition-transform active:scale-90 disabled:opacity-40"
         >
-          ➤
+          <Send className="h-5 w-5" />
         </button>
       </div>
 

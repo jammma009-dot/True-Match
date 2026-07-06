@@ -46,12 +46,25 @@ export function MainApp() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto">
+      <main className="relative min-h-0 flex-1">
+        {/* Discover fills the screen with no scrolling; other tabs scroll. */}
         {tab === "discover" && <DiscoverScreen />}
-        {tab === "likes" && <LikesScreen />}
-        {tab === "chats" && <MatchesScreen onOpenChat={setActiveChat} />}
-        {tab === "profile" && <ProfileScreen />}
-      </div>
+        {tab === "likes" && (
+          <div className="h-full overflow-y-auto">
+            <LikesScreen />
+          </div>
+        )}
+        {tab === "chats" && (
+          <div className="h-full overflow-y-auto">
+            <MatchesScreen onOpenChat={setActiveChat} />
+          </div>
+        )}
+        {tab === "profile" && (
+          <div className="h-full overflow-y-auto">
+            <ProfileScreen />
+          </div>
+        )}
+      </main>
       <BottomNav active={tab} onChange={setTab} />
     </div>
   );

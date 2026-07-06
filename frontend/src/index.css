@@ -21,7 +21,25 @@ body {
   color: var(--tg-text-color);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Snappy taps everywhere — removes the 300ms mobile click delay and stops
+   long-press text selection / callouts on interactive elements. */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 /* Hide scrollbars for a cleaner mini-app feel */

@@ -1,24 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { X, Heart, Gift, MapPin, Sparkles, RefreshCw } from "lucide-react";
 import { api, PublicProfile } from "../lib/api";
 import { useT } from "../store/useStore";
-import { Spinner } from "../components/ui";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
+const SWIPE_THRESHOLD = 90; // px of horizontal drag to count as a swipe
+const TAP_SLOP = 10; // px of movement below which we treat it as a tap
+
 export function DiscoverScreen() {
   const t = useT();
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["discovery"],
     queryFn: api.getDiscovery,
   });
 
-  const [index, setIndex] = useState(0);
   const [queue, setQueue] = useState<PublicProfile[]>([]);
+  const [index, setIndex] = useState(0);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [matchName, setMatchName] = useState<string | null>(null);
   const [reportFor, setReportFor] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+
+  // Drag / animation state
+  const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
+  const [leaving, setLeaving] = useState<null | "like" | "pass">(null);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const busyRef = useRef(false);
 
   useEffect(() => {
     if (data?.queue) {
@@ -32,137 +41,241 @@ export function DiscoverScreen() {
 
   const advance = () => {
     setPhotoIdx(0);
-    if (index + 1 >= queue.length) {
-      // Reached end — refetch a fresh queue.
-      refetch();
-    } else {
-      setIndex((i) => i + 1);
-    }
-  };
-
-  const doSwipe = async (action: "like" | "pass") => {
-    if (!current || busy) return;
-    setBusy(true);
-    haptics.impact(action === "like" ? "medium" : "light");
-    try {
-      const res = await api.swipe(current.userId, action);
-      if (res.matched) {
-        haptics.notify("success");
-        setMatchName(current.name);
+    setIndex((i) => {
+      const next = i + 1;
+      if (next >= queue.length) {
+        refetch();
+        return 0;
       }
-    } catch {
-      /* ignore, still advance */
-    } finally {
-      setBusy(false);
+      return next;
+    });
+  };
+
+  const triggerSwipe = (action: "like" | "pass") => {
+    if (!current || busyRef.current || leaving) return;
+    busyRef.current = true;
+    setLeaving(action);
+    haptics.impact(action === "like" ? "medium" : "light");
+
+    // Fire the network call during the fly-off animation.
+    api
+      .swipe(current.userId, action)
+      .then((res) => {
+        if (res.matched) {
+          haptics.notify("success");
+          setMatchName(current.name);
+        }
+      })
+      .catch(() => undefined);
+
+    window.setTimeout(() => {
       advance();
+      setLeaving(null);
+      setDrag({ x: 0, y: 0, active: false });
+      busyRef.current = false;
+    }, 300);
+  };
+
+  // ---- Pointer (drag + tap) handling on the card ----
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (leaving) return;
+    startRef.current = { x: e.clientX, y: e.clientY };
+    setDrag({ x: 0, y: 0, active: true });
+    cardRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!startRef.current) return;
+    setDrag({
+      x: e.clientX - startRef.current.x,
+      y: e.clientY - startRef.current.y,
+      active: true,
+    });
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!startRef.current || !current) {
+      setDrag({ x: 0, y: 0, active: false });
+      return;
+    }
+    const dx = e.clientX - startRef.current.x;
+    const dy = e.clientY - startRef.current.y;
+    const dist = Math.hypot(dx, dy);
+    startRef.current = null;
+
+    if (dist < TAP_SLOP) {
+      // Treat as a tap → cycle photos based on where they tapped.
+      const rect = cardRef.current?.getBoundingClientRect();
+      if (rect && current.photos.length > 1) {
+        const rel = (e.clientX - rect.left) / rect.width;
+        if (rel < 0.4) {
+          setPhotoIdx((p) => (p - 1 + current.photos.length) % current.photos.length);
+        } else {
+          setPhotoIdx((p) => (p + 1) % current.photos.length);
+        }
+        haptics.select();
+      }
+      setDrag({ x: 0, y: 0, active: false });
+      return;
+    }
+
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      triggerSwipe(dx > 0 ? "like" : "pass");
+    } else {
+      // Snap back
+      setDrag({ x: 0, y: 0, active: false });
     }
   };
 
-  if (isLoading) return <Spinner />;
+  // ---- Render states ----
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!current) {
     return (
-      <div className="flex min-h-full flex-col items-center justify-center px-8 text-center text-tg-hint">
-        <div className="mb-4 text-5xl">🌆</div>
-        <p>{t("discover.empty")}</p>
+      <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)]">
+          <Sparkles className="h-9 w-9 text-brand" />
+        </div>
+        <p className="mb-6 max-w-xs text-tg-hint">{t("discover.empty")}</p>
+        <button
+          onClick={() => refetch()}
+          className="flex items-center gap-2 rounded-full bg-[var(--tg-secondary-bg-color)] px-5 py-2.5 font-medium text-tg active:opacity-70"
+        >
+          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          {t("common.retry")}
+        </button>
       </div>
     );
   }
 
   const photo = current.photos[photoIdx]?.url ?? current.photos[0]?.url;
 
+  // Card transform
+  const transform = leaving
+    ? `translateX(${leaving === "like" ? 130 : -130}%) rotate(${leaving === "like" ? 20 : -20}deg)`
+    : `translate(${drag.x}px, ${drag.y * 0.15}px) rotate(${drag.x / 22}deg)`;
+  const transition = drag.active ? "none" : "transform 0.3s cubic-bezier(0.22,1,0.36,1)";
+
+  const likeOpacity = leaving === "like" ? 1 : Math.min(1, Math.max(0, drag.x / SWIPE_THRESHOLD));
+  const nopeOpacity = leaving === "pass" ? 1 : Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
+
   return (
-    <div className="flex min-h-full flex-col p-4">
+    <div className="relative h-full w-full select-none overflow-hidden px-3 pb-3 pt-3">
       {/* Card */}
-      <div className="relative flex-1 overflow-hidden rounded-3xl bg-[var(--tg-secondary-bg-color)]">
-        {photo ? (
-          <img src={photo} alt={current.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-6xl">👤</div>
+      <div
+        ref={cardRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        style={{ transform, transition, touchAction: "none" }}
+        className="relative h-full w-full cursor-grab overflow-hidden rounded-[28px] bg-neutral-900 shadow-2xl shadow-black/40 active:cursor-grabbing"
+      >
+        {/* Fallback gradient (shows if the image is missing/broken) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand/40 via-neutral-800 to-neutral-950" />
+
+        {/* Photo — always fills, never leaves white space */}
+        {photo && (
+          <img
+            src={photo}
+            alt={current.name}
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+          />
         )}
 
-        {/* Photo tap zones to cycle photos */}
+        {/* Photo progress bars */}
         {current.photos.length > 1 && (
-          <>
-            <button
-              className="absolute left-0 top-0 h-full w-1/3"
-              onClick={() =>
-                setPhotoIdx((p) => (p - 1 + current.photos.length) % current.photos.length)
-              }
-            />
-            <button
-              className="absolute right-0 top-0 h-full w-1/3"
-              onClick={() => setPhotoIdx((p) => (p + 1) % current.photos.length)}
-            />
-            <div className="absolute left-0 right-0 top-2 flex gap-1 px-3">
-              {current.photos.map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1 flex-1 rounded-full ${i === photoIdx ? "bg-white" : "bg-white/30"}`}
-                />
-              ))}
-            </div>
-          </>
+          <div className="absolute inset-x-3 top-3 z-20 flex gap-1.5">
+            {current.photos.map((_, i) => (
+              <div key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
+                <div className={`h-full rounded-full bg-white ${i === photoIdx ? "w-full" : "w-0"}`} />
+              </div>
+            ))}
+          </div>
         )}
+
+        {/* LIKE / NOPE stamps */}
+        <div
+          style={{ opacity: likeOpacity }}
+          className="absolute left-5 top-16 z-20 -rotate-12 rounded-lg border-4 border-like px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-like"
+        >
+          LIKE
+        </div>
+        <div
+          style={{ opacity: nopeOpacity }}
+          className="absolute right-5 top-16 z-20 rotate-12 rounded-lg border-4 border-pass px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-pass"
+        >
+          NOPE
+        </div>
 
         {/* Report/block */}
         <button
+          type="button"
           onClick={() => setReportFor(current.userId)}
-          className="absolute right-3 top-6 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute right-3 top-8 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur active:bg-black/60"
         >
-          ⋮
+          <span className="text-lg leading-none">⋮</span>
         </button>
 
-        {/* Info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 to-transparent p-5 pt-16">
+        {/* Info overlay — sits above the action buttons */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-5 pb-28 pt-20">
           <div className="flex items-end gap-2">
-            <h2 className="text-2xl font-bold text-white">{current.name}</h2>
-            <span className="pb-0.5 text-xl text-white/90">{current.age}</span>
+            <h2 className="text-3xl font-bold text-white drop-shadow">{current.name}</h2>
+            <span className="pb-1 text-2xl font-light text-white/90">{current.age}</span>
           </div>
-          <p className="mt-1 text-sm text-white/80">📍 {current.cityLabel}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-xs text-white backdrop-blur">
+          <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
+            <MapPin className="h-4 w-4" /> {current.cityLabel}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
               {t(`intent.${current.intent}`)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-center gap-6 py-5">
+      {/* Action buttons — overlaid on the card, always visible, no scrolling */}
+      <div className="absolute inset-x-0 bottom-7 z-40 flex items-center justify-center gap-5">
+        <ActionButton onClick={() => triggerSwipe("pass")} variant="pass" label="pass">
+          <X className="h-7 w-7" strokeWidth={3} />
+        </ActionButton>
+
+        {/* Gift / super-like — disabled ("coming soon") */}
         <button
-          onClick={() => doSwipe("pass")}
-          disabled={busy}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)] text-3xl text-pass shadow-lg active:scale-95 disabled:opacity-50"
-        >
-          ✕
-        </button>
-        {/* Gift / super-like placeholder — disabled ("coming soon") */}
-        <button
+          type="button"
           disabled
           title={t("discover.gift")}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)] text-2xl opacity-40"
+          className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-white/90 text-amber-400 opacity-50 shadow-lg"
         >
-          🎁
+          <Gift className="h-5 w-5" />
         </button>
-        <button
-          onClick={() => doSwipe("like")}
-          disabled={busy}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-like text-3xl text-white shadow-lg active:scale-95 disabled:opacity-50"
-        >
-          ❤️
-        </button>
+
+        <ActionButton onClick={() => triggerSwipe("like")} variant="like" label="like">
+          <Heart className="h-7 w-7" strokeWidth={2.5} fill="currentColor" />
+        </ActionButton>
       </div>
 
       {/* Match celebration */}
       {matchName && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 px-8 text-center"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 px-8 text-center backdrop-blur-sm"
           onClick={() => setMatchName(null)}
         >
-          <div className="mb-4 text-6xl">🎉</div>
-          <h2 className="mb-2 text-3xl font-bold text-white">{t("discover.newMatch")}</h2>
-          <p className="text-white/80">{matchName}</p>
+          <Sparkles className="mb-4 h-14 w-14 text-brand" />
+          <h2 className="mb-2 bg-gradient-to-r from-brand to-pink-400 bg-clip-text text-4xl font-extrabold text-transparent">
+            {t("discover.newMatch")}
+          </h2>
+          <p className="text-lg text-white/80">{matchName}</p>
+          <p className="mt-6 text-sm text-white/50">Tap to continue</p>
         </div>
       )}
 
@@ -177,5 +290,33 @@ export function DiscoverScreen() {
         />
       )}
     </div>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  variant,
+  label,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant: "like" | "pass";
+  label: string;
+}) {
+  const styles =
+    variant === "like"
+      ? "bg-gradient-to-br from-emerald-400 to-like text-white"
+      : "bg-white text-pass";
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      onPointerDown={(e) => e.stopPropagation()}
+      className={`flex h-16 w-16 touch-manipulation items-center justify-center rounded-full shadow-xl shadow-black/30 transition-transform active:scale-90 ${styles}`}
+    >
+      {children}
+    </button>
   );
 }

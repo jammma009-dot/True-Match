@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { MessagesSquare, ChevronRight } from "lucide-react";
 import { api, MatchListItem } from "../lib/api";
 import { useT } from "../store/useStore";
 import { Spinner } from "../components/ui";
@@ -25,8 +26,10 @@ export function MatchesScreen({
       <h1 className="mb-4 text-2xl font-bold text-tg">{t("matches.title")}</h1>
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-8 pt-24 text-center text-tg-hint">
-          <div className="mb-4 text-5xl">💫</div>
-          <p>{t("matches.empty")}</p>
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)]">
+            <MessagesSquare className="h-9 w-9 text-brand" />
+          </div>
+          <p className="max-w-xs">{t("matches.empty")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -53,10 +56,11 @@ export function MatchesScreen({
                   </span>
                   {m.user && <span className="text-sm text-tg-hint">{m.user.age}</span>}
                 </div>
-                <p className="truncate text-sm text-tg-hint">
+                <p className={`truncate text-sm ${m.lastMessage ? "text-tg-hint" : "font-medium text-brand"}`}>
                   {m.lastMessage ? m.lastMessage.body : t("matches.newMatchLabel")}
                 </p>
               </div>
+              <ChevronRight className="h-5 w-5 flex-shrink-0 text-tg-hint" />
             </button>
           ))}
         </div>

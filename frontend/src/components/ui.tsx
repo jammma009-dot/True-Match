@@ -28,13 +28,13 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const base =
-    "w-full rounded-2xl py-3.5 text-base font-semibold transition-opacity disabled:opacity-40 active:opacity-80";
+    "w-full touch-manipulation rounded-2xl py-3.5 text-base font-semibold transition-all disabled:opacity-40 active:scale-[0.98]";
   const styles =
     variant === "primary"
-      ? "bg-brand text-white"
+      ? "bg-gradient-to-r from-brand to-brand-dark text-white shadow-lg shadow-brand/25"
       : "bg-[var(--tg-secondary-bg-color)] text-tg";
   return (
-    <button className={`${base} ${styles} ${className}`} {...rest}>
+    <button type="button" className={`${base} ${styles} ${className}`} {...rest}>
       {children}
     </button>
   );
