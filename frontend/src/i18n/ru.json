@@ -8,6 +8,8 @@
   "common.loading": "Загрузка...",
   "common.error": "Произошла ошибка",
   "common.retry": "Повторить",
+  "common.more": "ещё",
+  "common.less": "свернуть",
   "common.search": "Поиск",
   "common.send": "Отправить",
 

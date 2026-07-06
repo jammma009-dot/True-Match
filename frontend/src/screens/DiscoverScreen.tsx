@@ -32,6 +32,7 @@ export function DiscoverScreen({
   const [index, setIndex] = useState(0);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [reportFor, setReportFor] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   // Drag / animation state
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
@@ -52,6 +53,7 @@ export function DiscoverScreen({
 
   const advance = () => {
     setPhotoIdx(0);
+    setExpanded(false);
     setIndex((i) => {
       const next = i + 1;
       if (next >= queue.length) {
@@ -278,52 +280,52 @@ export function DiscoverScreen({
           NOPE
         </div>
 
-        {/* Info overlay — sits above the action bar */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/60 to-transparent px-5 pb-32 pt-24">
-          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-brand">
-            <Heart className="h-3.5 w-3.5" fill="currentColor" />
+        {/* Info overlay — compact by default, expands upward on "more" */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/55 to-transparent px-4 pb-[84px] pt-14">
+          <div className="mb-0.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+            <Heart className="h-3 w-3" fill="currentColor" />
             {t(`intent.${current.intent}`)}
           </div>
-          <div className="flex items-end gap-2">
-            <h2 className="text-4xl font-extrabold leading-none text-white">{current.name}</h2>
-            <span className="text-3xl font-light text-white/90">{current.age}</span>
+          <div className="flex items-end gap-1.5">
+            <h2 className="text-2xl font-extrabold leading-none text-white">{current.name}</h2>
+            <span className="text-lg font-light text-white/90">{current.age}</span>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-              <MapPin className="h-3.5 w-3.5" /> {current.cityLabel}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+              <MapPin className="h-3 w-3" /> {current.cityLabel}
             </span>
-            <span className="rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+            <span className="rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
               {current.gender === "male"
                 ? t("onboarding.gender.male")
                 : t("onboarding.gender.female")}
             </span>
             {current.heightCm && (
-              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                <Ruler className="h-3.5 w-3.5" /> {current.heightCm} cm
+              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                <Ruler className="h-3 w-3" /> {current.heightCm} cm
               </span>
             )}
             {current.smoking && (
-              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                <SmokingIcon className="h-3.5 w-3.5" /> {t(`habit.${current.smoking}`)}
+              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                <SmokingIcon className="h-3 w-3" /> {t(`habit.${current.smoking}`)}
               </span>
             )}
             {current.drinking && (
-              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/25 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                <DrinkingIcon className="h-3.5 w-3.5" /> {t(`habit.${current.drinking}`)}
+              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                <DrinkingIcon className="h-3 w-3" /> {t(`habit.${current.drinking}`)}
               </span>
             )}
           </div>
 
           {current.interests.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {current.interests.slice(0, 6).map((key) => {
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {(expanded ? current.interests : current.interests.slice(0, 3)).map((key) => {
                 const Icon = INTEREST_ICON[key];
                 return (
                   <span
                     key={key}
-                    className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur"
+                    className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
                   >
-                    {Icon && <Icon className="h-3.5 w-3.5" />} {t(`interest.${key}`)}
+                    {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
                   </span>
                 );
               })}
@@ -331,7 +333,20 @@ export function DiscoverScreen({
           )}
 
           {current.bio && (
-            <p className="mt-2.5 line-clamp-2 text-sm text-white/85">{current.bio}</p>
+            <p className={`mt-1.5 text-[13px] leading-snug text-white/85 ${expanded ? "" : "line-clamp-1"}`}>
+              {current.bio}
+            </p>
+          )}
+
+          {(current.interests.length > 3 || (current.bio?.length ?? 0) > 55) && (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => setExpanded((v) => !v)}
+              className="pointer-events-auto mt-1 text-xs font-bold text-brand"
+            >
+              {expanded ? t("common.less") : t("common.more")}
+            </button>
           )}
         </div>
       </div>
@@ -342,21 +357,21 @@ export function DiscoverScreen({
         onClick={() => setShowFilter(true)}
         onPointerDown={(e) => e.stopPropagation()}
         aria-label="filters"
-        className="absolute right-2 top-1/2 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur active:scale-90"
+        className="absolute right-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur active:scale-90"
       >
         <SlidersHorizontal className="h-5 w-5" />
       </button>
 
       {/* Action bar — white pill (pass) · dark circle (gift) · pink pill (like) */}
-      <div className="absolute inset-x-0 bottom-6 z-40 flex items-center gap-3 px-5">
+      <div className="absolute inset-x-0 bottom-4 z-40 flex items-center gap-2.5 px-5">
         <button
           type="button"
           aria-label="pass"
           onClick={() => triggerSwipe("pass")}
           onPointerDown={(e) => e.stopPropagation()}
-          className="glow-pass flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95"
+          className="glow-pass flex h-14 flex-1 touch-manipulation items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95"
         >
-          <HeartCrack className="h-7 w-7" strokeWidth={2.5} />
+          <HeartCrack className="h-6 w-6" strokeWidth={2.5} />
         </button>
 
         {/* Gift / super-like — disabled ("coming soon"), with shine + flip */}
@@ -364,7 +379,7 @@ export function DiscoverScreen({
           type="button"
           disabled
           title={t("discover.gift")}
-          className="gift-shine flex h-14 w-14 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-amber-300 shadow-lg"
+          className="gift-shine flex h-12 w-12 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-amber-300 shadow-lg"
         >
           <span className="gift-flip">
             <Gift className="h-5 w-5" />
@@ -376,9 +391,9 @@ export function DiscoverScreen({
           aria-label="like"
           onClick={() => triggerSwipe("like")}
           onPointerDown={(e) => e.stopPropagation()}
-          className="glow-like flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-brand text-black transition-transform active:scale-95"
+          className="glow-like flex h-14 flex-1 touch-manipulation items-center justify-center rounded-full bg-brand text-black transition-transform active:scale-95"
         >
-          <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
+          <Heart className="h-6 w-6" fill="currentColor" strokeWidth={2} />
         </button>
       </div>
       </div>

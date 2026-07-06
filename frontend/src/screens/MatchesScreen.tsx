@@ -25,7 +25,7 @@ export function MatchesScreen({
   return (
     <div className="min-h-full px-4 pb-4">
       <LogoHeader />
-      <h1 className="mb-4 text-2xl font-bold text-tg">{t("matches.title")}</h1>
+      <h1 className="mb-3 text-xl font-bold text-tg">{t("matches.title")}</h1>
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-8 pt-24 text-center text-tg-hint">
           <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--tg-secondary-bg-color)]">
@@ -44,7 +44,7 @@ export function MatchesScreen({
               }}
               className="flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] p-3 text-left"
             >
-              <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full bg-black/20">
+              <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-black/20">
                 {m.user?.photo ? (
                   <img src={m.user.photo} alt="" className="h-full w-full object-cover" />
                 ) : (

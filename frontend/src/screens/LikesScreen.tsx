@@ -21,7 +21,7 @@ export function LikesScreen() {
   return (
     <div className="min-h-full px-4 pb-6">
       <LogoHeader />
-      <h1 className="text-2xl font-bold text-tg">{t("likes.title")}</h1>
+      <h1 className="text-xl font-bold text-tg">{t("likes.title")}</h1>
       <p className="mb-4 text-sm text-tg-hint">{t("likes.subtitle")}</p>
 
       {isLoading ? (

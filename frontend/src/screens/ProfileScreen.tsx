@@ -64,7 +64,7 @@ export function ProfileScreen() {
     <div className="min-h-full px-4 pb-8 pt-6">
       {/* Centered header */}
       <div className="flex flex-col items-center text-center">
-        <div className="h-28 w-28 overflow-hidden rounded-full border-2 border-white/10 bg-[var(--tg-secondary-bg-color)]">
+        <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-white/10 bg-[var(--tg-secondary-bg-color)]">
           {profile?.photos[0] ? (
             <img src={profile.photos[0].url} alt="" className="h-full w-full object-cover" />
           ) : (

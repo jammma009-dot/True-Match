@@ -8,6 +8,8 @@
   "common.loading": "Yuklanmoqda...",
   "common.error": "Xatolik yuz berdi",
   "common.retry": "Qayta urinish",
+  "common.more": "ko'proq",
+  "common.less": "kamroq",
   "common.search": "Qidirish",
   "common.send": "Yuborish",
 
