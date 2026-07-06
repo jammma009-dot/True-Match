@@ -2,7 +2,8 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { toPublicProfile } from "../utils/serialize";
-import { Gender } from "@prisma/client";
+import { CITY_VALUES } from "../utils/cities";
+import { Gender, City } from "@prisma/client";
 
 const router = Router();
 
@@ -62,6 +63,12 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
   const maxBirth = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
   const minBirth = new Date(now.getFullYear() - maxAge - 1, now.getMonth(), now.getDate());
 
+  // Optional specific-city filter (overrides scope when set).
+  const cityParam =
+    typeof req.query.city === "string" && CITY_VALUES.includes(req.query.city as City)
+      ? (req.query.city as City)
+      : null;
+
   const baseWhere = {
     status: "approved" as const,
     gender: oppositeGender,
@@ -71,30 +78,39 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
   };
   const include = { photos: true, user: { select: { id: true } } };
 
-  // Fetch same-city and other-city candidates in SEPARATE queries so that
-  // same-city people are always found (not lost inside a generic slice).
-  const [sameCityRaw, otherCityRaw] = await Promise.all([
-    prisma.profile.findMany({
-      where: { ...baseWhere, city: myProfile.city },
-      include,
-      take: 50,
-    }),
-    prisma.profile.findMany({
-      where: { ...baseWhere, city: { not: myProfile.city } },
-      include,
-      take: 50,
-    }),
-  ]);
+  let ordered;
 
-  const sameCity = shuffle(sameCityRaw);
-  const otherCity = shuffle(otherCityRaw);
-
-  // "nearby": same-city first, then other cities as a fallback once the local
-  // ones run out. "foryou": a shuffled mix of everyone from all locations.
-  const ordered =
-    scope === "nearby"
-      ? [...sameCity, ...otherCity]
-      : shuffle([...sameCityRaw, ...otherCityRaw]);
+  if (cityParam) {
+    // Only people from the chosen city.
+    const rows = await prisma.profile.findMany({
+      where: { ...baseWhere, city: cityParam },
+      include,
+      take: 60,
+    });
+    ordered = shuffle(rows);
+  } else {
+    // Fetch same-city and other-city candidates separately so same-city people
+    // are always found (not lost inside a generic slice).
+    const [sameCityRaw, otherCityRaw] = await Promise.all([
+      prisma.profile.findMany({
+        where: { ...baseWhere, city: myProfile.city },
+        include,
+        take: 50,
+      }),
+      prisma.profile.findMany({
+        where: { ...baseWhere, city: { not: myProfile.city } },
+        include,
+        take: 50,
+      }),
+    ]);
+    const sameCity = shuffle(sameCityRaw);
+    const otherCity = shuffle(otherCityRaw);
+    // "nearby": same-city first, then others as fallback. "foryou": full mix.
+    ordered =
+      scope === "nearby"
+        ? [...sameCity, ...otherCity]
+        : shuffle([...sameCityRaw, ...otherCityRaw]);
+  }
 
   const queue = ordered
     .slice(0, 30)

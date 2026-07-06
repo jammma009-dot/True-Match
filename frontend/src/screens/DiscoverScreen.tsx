@@ -22,10 +22,11 @@ export function DiscoverScreen({
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(80);
+  const [city, setCity] = useState<string>("");
   const [showFilter, setShowFilter] = useState(false);
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["discovery", feedTab, minAge, maxAge],
-    queryFn: () => api.getDiscovery({ scope: feedTab, minAge, maxAge }),
+    queryKey: ["discovery", feedTab, minAge, maxAge, city],
+    queryFn: () => api.getDiscovery({ scope: feedTab, minAge, maxAge, city: city || undefined }),
   });
 
   const [queue, setQueue] = useState<PublicProfile[]>([]);
@@ -280,62 +281,93 @@ export function DiscoverScreen({
           NOPE
         </div>
 
-        {/* Info overlay — minimal by default, expands upward on "more" */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/45 to-transparent px-4 pb-[78px] pt-10">
-          <div className="mb-0.5 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
-            <Heart className="h-3 w-3" fill="currentColor" />
+        {/* Info overlay — compact by default (shows a preview), expands on "more" */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/40 to-transparent px-4 pb-[74px] pt-8">
+          <div className="mb-0.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand">
+            <Heart className="h-2.5 w-2.5" fill="currentColor" />
             {t(`intent.${current.intent}`)}
           </div>
           <div className="flex items-end gap-1.5">
-            <h2 className="text-2xl font-extrabold leading-none text-white">{current.name}</h2>
-            <span className="text-lg font-light text-white/90">{current.age}</span>
+            <h2 className="text-xl font-extrabold leading-none text-white">{current.name}</h2>
+            <span className="text-base font-light text-white/90">{current.age}</span>
           </div>
 
           {/* Core badges — always shown (one row) */}
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-              <MapPin className="h-3 w-3" /> {current.cityLabel}
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+              <MapPin className="h-2.5 w-2.5" /> {current.cityLabel}
             </span>
-            <span className="rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+            <span className="rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
               {current.gender === "male"
                 ? t("onboarding.gender.male")
                 : t("onboarding.gender.female")}
             </span>
             {current.heightCm && (
-              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                <Ruler className="h-3 w-3" /> {current.heightCm} cm
+              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                <Ruler className="h-2.5 w-2.5" /> {current.heightCm} cm
               </span>
             )}
           </div>
 
-          {/* Extra details — only when expanded */}
+          {/* Preview (collapsed): first 2 interests + a one-line bio */}
+          {!expanded && (
+            <>
+              {current.interests.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {current.interests.slice(0, 2).map((key) => {
+                    const Icon = INTEREST_ICON[key];
+                    return (
+                      <span
+                        key={key}
+                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
+                      >
+                        {Icon && <Icon className="h-2.5 w-2.5" />} {t(`interest.${key}`)}
+                      </span>
+                    );
+                  })}
+                  {current.interests.length > 2 && (
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur">
+                      +{current.interests.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
+              {current.bio && (
+                <p className="mt-1.5 line-clamp-1 text-[12px] leading-snug text-white/85">
+                  {current.bio}
+                </p>
+              )}
+            </>
+          )}
+
+          {/* Full details — when expanded */}
           {expanded && (
             <>
               {(current.smoking || current.drinking) && (
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                <div className="mt-1.5 flex flex-wrap gap-1">
                   {current.smoking && (
-                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                      <SmokingIcon className="h-3 w-3" /> {t(`habit.${current.smoking}`)}
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                      <SmokingIcon className="h-2.5 w-2.5" /> {t(`habit.${current.smoking}`)}
                     </span>
                   )}
                   {current.drinking && (
-                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-                      <DrinkingIcon className="h-3 w-3" /> {t(`habit.${current.drinking}`)}
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                      <DrinkingIcon className="h-2.5 w-2.5" /> {t(`habit.${current.drinking}`)}
                     </span>
                   )}
                 </div>
               )}
 
               {current.interests.length > 0 && (
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                <div className="mt-1.5 flex flex-wrap gap-1">
                   {current.interests.map((key) => {
                     const Icon = INTEREST_ICON[key];
                     return (
                       <span
                         key={key}
-                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
+                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
                       >
-                        {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
+                        {Icon && <Icon className="h-2.5 w-2.5" />} {t(`interest.${key}`)}
                       </span>
                     );
                   })}
@@ -343,20 +375,20 @@ export function DiscoverScreen({
               )}
 
               {current.bio && (
-                <p className="mt-1.5 text-[13px] leading-snug text-white/85">{current.bio}</p>
+                <p className="mt-1.5 text-[12px] leading-snug text-white/85">{current.bio}</p>
               )}
             </>
           )}
 
           {(current.smoking ||
             current.drinking ||
-            current.interests.length > 0 ||
-            current.bio) && (
+            current.interests.length > 2 ||
+            (current.bio && current.bio.length > 40)) && (
             <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setExpanded((v) => !v)}
-              className="pointer-events-auto mt-1.5 text-xs font-bold text-brand"
+              className="pointer-events-auto mt-1 text-[11px] font-bold text-brand"
             >
               {expanded ? t("common.less") : t("common.more")}
             </button>
@@ -424,11 +456,12 @@ export function DiscoverScreen({
 
       {showFilter && (
         <FilterModal
-          initial={{ minAge, maxAge, scope: feedTab }}
+          initial={{ minAge, maxAge, scope: feedTab, city: city || undefined }}
           onApply={(f) => {
             setFeedTab(f.scope);
             setMinAge(f.minAge);
             setMaxAge(f.maxAge);
+            setCity(f.city ?? "");
             setShowFilter(false);
           }}
           onClose={() => setShowFilter(false)}

@@ -147,11 +147,13 @@ export const api = {
     scope?: "foryou" | "nearby";
     minAge?: number;
     maxAge?: number;
+    city?: string;
   }) => {
     const p = new URLSearchParams();
     p.set("scope", opts?.scope ?? "foryou");
     if (opts?.minAge) p.set("minAge", String(opts.minAge));
     if (opts?.maxAge) p.set("maxAge", String(opts.maxAge));
+    if (opts?.city) p.set("city", opts.city);
     return request<{ queue: PublicProfile[] }>(`/api/discovery?${p.toString()}`);
   },
 

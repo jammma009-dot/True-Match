@@ -111,6 +111,15 @@
   "profile.interests": "Интересы",
   "profile.smoking": "Курение",
   "profile.drinking": "Алкоголь",
+  "profile.contact": "Связаться с нами",
+  "profile.premium": "Купить Premium",
+
+  "premium.title": "Купить Premium",
+  "premium.subtitle": "Выберите способ оплаты",
+  "premium.stars": "Через Telegram Stars",
+  "premium.starsSoon": "Скоро",
+  "premium.card": "Оплата картой",
+  "premium.cardHint": "Перенаправим к ответственному лицу",
 
   "edit.title": "Редактировать профиль",
   "edit.save": "Сохранить",

@@ -111,6 +111,15 @@
   "profile.interests": "Qiziqishlar",
   "profile.smoking": "Chekish",
   "profile.drinking": "Ichimlik",
+  "profile.contact": "Biz bilan bog'lanish",
+  "profile.premium": "Premium sotib olish",
+
+  "premium.title": "Premium sotib olish",
+  "premium.subtitle": "To'lov usulini tanlang",
+  "premium.stars": "Telegram Stars orqali",
+  "premium.starsSoon": "Tez orada",
+  "premium.card": "Karta orqali to'lash",
+  "premium.cardHint": "Mas'ul shaxsga yo'naltiramiz",
 
   "edit.title": "Profilni tahrirlash",
   "edit.save": "Saqlash",

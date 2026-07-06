@@ -6,6 +6,7 @@ import { validateBody } from "../middleware/validate";
 import { toOwnProfile } from "../utils/serialize";
 import { CITIES } from "../utils/cities";
 import { INTERESTS, MIN_HEIGHT, MAX_HEIGHT } from "../utils/interests";
+import { getSettings } from "../lib/settings";
 import { Language } from "@prisma/client";
 
 const router = Router();
@@ -39,7 +40,13 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     Math.floor((Date.now() - user.createdAt.getTime()) / 86_400_000) + 1,
   );
 
+  const settings = await getSettings();
+
   res.json({
+    settings: {
+      contactUsername: settings.contactUsername,
+      paymentUsername: settings.paymentUsername,
+    },
     user: {
       id: user.id,
       language: user.language,

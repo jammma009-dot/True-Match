@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { MapPin, Ruler, Pencil, ChevronRight, Trash2 } from "lucide-react";
+import { MapPin, Ruler, Pencil, ChevronRight, Trash2, MessageCircle, Crown } from "lucide-react";
 import { useStore, useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { Locale } from "../i18n";
-import { haptics } from "../lib/telegram";
+import { haptics, openTelegramLink } from "../lib/telegram";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { EditProfileScreen } from "./EditProfileScreen";
+import { PremiumModal } from "../components/PremiumModal";
 import type { OwnProfile } from "../store/useStore";
 
 /** Rough profile-completeness percentage for the nudge bar. */
@@ -31,6 +32,9 @@ export function ProfileScreen() {
   const stats = me?.stats;
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showPremium, setShowPremium] = useState(false);
+  const contactUsername = me?.settings?.contactUsername ?? null;
+  const paymentUsername = me?.settings?.paymentUsername ?? null;
 
   const handleDelete = async () => {
     if (!window.confirm(t("profile.deleteConfirm"))) return;
@@ -190,6 +194,41 @@ export function ProfileScreen() {
         </div>
       </div>
 
+      {/* Contact + Buy Premium */}
+      <div className="mt-3 space-y-3">
+        {contactUsername && (
+          <button
+            type="button"
+            onClick={() => {
+              haptics.impact("light");
+              openTelegramLink(`https://t.me/${contactUsername}`);
+            }}
+            className="flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-secondary-bg-color)] px-4 py-4 text-left active:opacity-80"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/20 text-brand">
+              <MessageCircle className="h-4 w-4" />
+            </span>
+            <span className="flex-1 font-semibold text-tg">{t("profile.contact")}</span>
+            <ChevronRight className="h-5 w-5 text-tg-hint" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            haptics.impact("light");
+            setShowPremium(true);
+          }}
+          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-4 py-4 text-left text-white active:opacity-90"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+            <Crown className="h-4 w-4" />
+          </span>
+          <span className="flex-1 font-semibold">{t("profile.premium")}</span>
+          <ChevronRight className="h-5 w-5 text-white/80" />
+        </button>
+      </div>
+
       {/* Delete profile */}
       <button
         type="button"
@@ -200,6 +239,13 @@ export function ProfileScreen() {
         <Trash2 className="h-5 w-5" />
         {t("profile.delete")}
       </button>
+
+      {showPremium && (
+        <PremiumModal
+          paymentUsername={paymentUsername}
+          onClose={() => setShowPremium(false)}
+        />
+      )}
     </div>
   );
 }

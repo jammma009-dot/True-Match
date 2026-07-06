@@ -209,3 +209,12 @@ model Block {
   @@unique([blockerId, blockedId])
   @@index([blockedId])
 }
+
+// App-wide settings, editable from the admin panel (single row, id=1).
+model Settings {
+  id              Int      @id @default(1)
+  // Telegram usernames (without @) users are forwarded to.
+  contactUsername String?
+  paymentUsername String?
+  updatedAt       DateTime @updatedAt
+}

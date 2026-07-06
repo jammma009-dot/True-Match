@@ -32,6 +32,7 @@ export interface MeResponse {
   user: { id: string; language: Locale; isBanned: boolean };
   profile: OwnProfile | null;
   stats?: { views: number; likes: number; matches: number; days: number };
+  settings?: { contactUsername: string | null; paymentUsername: string | null };
   reference: {
     cities: CityRef[];
     intents: string[];

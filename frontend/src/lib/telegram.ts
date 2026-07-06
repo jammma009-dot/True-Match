@@ -80,6 +80,20 @@ export function getInitData(): string {
   return webApp()?.initData ?? "";
 }
 
+/** Open a Telegram link (t.me/...) inside Telegram, or a normal link. */
+export function openTelegramLink(url: string): void {
+  const wa = webApp();
+  try {
+    if (wa && typeof (wa as unknown as { openTelegramLink?: (u: string) => void }).openTelegramLink === "function") {
+      (wa as unknown as { openTelegramLink: (u: string) => void }).openTelegramLink(url);
+      return;
+    }
+  } catch {
+    /* ignore */
+  }
+  window.open(url, "_blank");
+}
+
 /** Best-effort language code from Telegram (used as an initial default). */
 export function getTelegramLanguageCode(): string | undefined {
   return webApp()?.initDataUnsafe?.user?.language_code;

@@ -59,6 +59,7 @@
           <button id="tab-pending" class="active" onclick="showTab('pending')">Pending profiles</button>
           <button id="tab-reports" onclick="showTab('reports')">Reports</button>
           <button id="tab-users" onclick="showTab('users')">All users</button>
+          <button id="tab-settings" onclick="showTab('settings')">Settings</button>
         </div>
         <div style="margin-left:auto; display:flex; gap:8px;">
           <button class="primary" style="background:#2ecc71" onclick="seedSamples()">Load sample profiles</button>
@@ -70,6 +71,7 @@
         <div id="pending"></div>
         <div id="reports" style="display:none"></div>
         <div id="users" style="display:none"></div>
+        <div id="settings" style="display:none"></div>
       </main>
     </div>
 
@@ -153,7 +155,7 @@
         document.getElementById("login").style.display = "block";
       }
 
-      const TABS = ["pending", "reports", "users"];
+      const TABS = ["pending", "reports", "users", "settings"];
       function showTab(tab) {
         TABS.forEach((t) => {
           document.getElementById(t).style.display = t === tab ? "block" : "none";
@@ -161,7 +163,46 @@
         });
         if (tab === "pending") loadPending();
         else if (tab === "reports") loadReports();
+        else if (tab === "settings") loadSettings();
         else loadUsers();
+      }
+
+      // ---------- Settings tab ----------
+      async function loadSettings() {
+        const el = document.getElementById("settings");
+        el.innerHTML = "Loading...";
+        const s = await api("/api/admin/settings");
+        el.innerHTML = `
+          <div class="card">
+            <h2 style="margin-top:0">Forwarding usernames</h2>
+            <p class="meta">Telegram usernames (without @) that users are sent to from the app.</p>
+            <label>Contact username — "Contact us" button</label>
+            <input id="set-contact" type="text" placeholder="e.g. truematch_support" value="${escapeHtml(s.contactUsername || "")}" />
+            <label>Payment username — "Pay via card" (Buy Premium)</label>
+            <input id="set-payment" type="text" placeholder="e.g. truematch_pay" value="${escapeHtml(s.paymentUsername || "")}" />
+            <div class="actions" style="margin-top:16px">
+              <button class="primary" onclick="saveSettings()">Save settings</button>
+            </div>
+            <p id="settings-msg" class="meta" style="margin-top:10px"></p>
+          </div>`;
+      }
+
+      async function saveSettings() {
+        const body = {
+          contactUsername: document.getElementById("set-contact").value.trim(),
+          paymentUsername: document.getElementById("set-payment").value.trim(),
+        };
+        const res = await api("/api/admin/settings", { method: "POST", body: JSON.stringify(body) });
+        const msg = document.getElementById("settings-msg");
+        if (res.ok) {
+          msg.style.color = "#2ecc71";
+          msg.textContent = "Saved ✓";
+          document.getElementById("set-contact").value = res.contactUsername || "";
+          document.getElementById("set-payment").value = res.paymentUsername || "";
+        } else {
+          msg.style.color = "#e74c3c";
+          msg.textContent = "Error: " + (res.error || "failed");
+        }
       }
 
       async function loadPending() {

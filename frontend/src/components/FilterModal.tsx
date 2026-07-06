@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Globe, MapPin } from "lucide-react";
-import { useT } from "../store/useStore";
+import { useStore, useT } from "../store/useStore";
 import { Button } from "./ui";
 import { haptics } from "../lib/telegram";
 
@@ -8,10 +8,11 @@ export interface Filters {
   minAge: number;
   maxAge: number;
   scope: "foryou" | "nearby";
+  city?: string; // specific city key (overrides scope when set)
 }
 
 /**
- * Discovery filter sheet: age range + city scope (all cities / nearby).
+ * Discovery filter sheet: age range + city (All / Nearby / a specific city).
  */
 export function FilterModal({
   initial,
@@ -23,17 +24,38 @@ export function FilterModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const cities = useStore((s) => s.me?.reference.cities ?? []);
   const [minAge, setMinAge] = useState(initial.minAge);
   const [maxAge, setMaxAge] = useState(initial.maxAge);
-  const [scope, setScope] = useState<"foryou" | "nearby">(initial.scope);
+  // Single selection: "all" | "nearby" | <cityKey>
+  const [sel, setSel] = useState<string>(
+    initial.city ? initial.city : initial.scope === "nearby" ? "nearby" : "all",
+  );
 
   const setMin = (v: number) => setMinAge(Math.min(v, maxAge));
   const setMax = (v: number) => setMaxAge(Math.max(v, minAge));
 
+  const chip = (key: string, label: string, icon?: React.ReactNode) => (
+    <button
+      key={key}
+      type="button"
+      onClick={() => {
+        haptics.select();
+        setSel(key);
+      }}
+      className={`flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium ${
+        sel === key ? "bg-brand text-white" : "bg-[var(--tg-bg-color)] text-tg"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="w-full rounded-t-3xl bg-[var(--tg-secondary-bg-color)] p-5 pb-8"
+        className="max-h-[85vh] w-full overflow-y-auto rounded-t-3xl bg-[var(--tg-secondary-bg-color)] p-5 pb-8"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
@@ -69,43 +91,24 @@ export function FilterModal({
           />
         </div>
 
-        {/* City scope */}
+        {/* City */}
         <div className="mb-6">
           <span className="mb-2 block text-sm font-semibold text-tg-hint">
             {t("filter.city")}
           </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                haptics.select();
-                setScope("foryou");
-              }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium ${
-                scope === "foryou" ? "bg-brand text-white" : "bg-[var(--tg-bg-color)] text-tg"
-              }`}
-            >
-              <Globe className="h-4 w-4" /> {t("filter.allCities")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                haptics.select();
-                setScope("nearby");
-              }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium ${
-                scope === "nearby" ? "bg-brand text-white" : "bg-[var(--tg-bg-color)] text-tg"
-              }`}
-            >
-              <MapPin className="h-4 w-4" /> {t("filter.nearby")}
-            </button>
+          <div className="flex flex-wrap gap-2">
+            {chip("all", t("filter.allCities"), <Globe className="h-4 w-4" />)}
+            {chip("nearby", t("filter.nearby"), <MapPin className="h-4 w-4" />)}
+            {cities.map((c) => chip(c.value, c.label))}
           </div>
         </div>
 
         <Button
           onClick={() => {
             haptics.impact("light");
-            onApply({ minAge, maxAge, scope });
+            const scope = sel === "nearby" ? "nearby" : "foryou";
+            const city = sel !== "all" && sel !== "nearby" ? sel : undefined;
+            onApply({ minAge, maxAge, scope, city });
           }}
         >
           {t("filter.apply")}

@@ -7,12 +7,56 @@ import { computeAge, isAdult, MIN_AGE } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
+import { getSettings } from "../lib/settings";
 import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
 
 const router = Router();
 
 // All admin routes require the admin password.
 router.use(requireAdmin);
+
+/**
+ * GET /api/admin/settings — read app settings.
+ * POST /api/admin/settings — update contact/payment usernames.
+ */
+router.get("/settings", async (_req: Request, res: Response) => {
+  const s = await getSettings();
+  res.json({
+    contactUsername: s.contactUsername,
+    paymentUsername: s.paymentUsername,
+  });
+});
+
+const settingsSchema = z.object({
+  contactUsername: z.string().trim().max(64).optional(),
+  paymentUsername: z.string().trim().max(64).optional(),
+});
+router.post(
+  "/settings",
+  validateBody(settingsSchema),
+  async (req: Request, res: Response) => {
+    const data = req.body as z.infer<typeof settingsSchema>;
+    // Strip a leading @ if the admin includes it.
+    const clean = (v?: string) => (v ? v.replace(/^@/, "").trim() || null : null);
+    const s = await prisma.settings.upsert({
+      where: { id: 1 },
+      update: {
+        contactUsername: clean(data.contactUsername),
+        paymentUsername: clean(data.paymentUsername),
+      },
+      create: {
+        id: 1,
+        contactUsername: clean(data.contactUsername),
+        paymentUsername: clean(data.paymentUsername),
+      },
+    });
+    res.json({
+      ok: true,
+      contactUsername: s.contactUsername,
+      paymentUsername: s.paymentUsername,
+    });
+  },
+);
 
 /**
  * POST /api/admin/seed — load ~12 sample/test profiles into the feed.
