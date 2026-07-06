@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Heart, Gift, MapPin, Sparkles, RefreshCw, MessageCircle } from "lucide-react";
+import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MessageCircle, MoreVertical, Flame } from "lucide-react";
 import { api, PublicProfile, MatchListItem } from "../lib/api";
-import { useT } from "../store/useStore";
+import { useStore, useT } from "../store/useStore";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -15,6 +15,8 @@ export function DiscoverScreen({
   onOpenChat: (m: MatchListItem) => void;
 }) {
   const t = useT();
+  const myCity = useStore((s) => s.me?.profile?.city);
+  const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["discovery"],
     queryFn: api.getDiscovery,
@@ -41,13 +43,21 @@ export function DiscoverScreen({
     }
   }, [data]);
 
-  const current = queue[index];
+  useEffect(() => {
+    setIndex(0);
+    setPhotoIdx(0);
+  }, [feedTab]);
+
+  // "Nearby" narrows the feed to the user's own city.
+  const visibleQueue =
+    feedTab === "nearby" && myCity ? queue.filter((p) => p.city === myCity) : queue;
+  const current = visibleQueue[index];
 
   const advance = () => {
     setPhotoIdx(0);
     setIndex((i) => {
       const next = i + 1;
-      if (next >= queue.length) {
+      if (next >= visibleQueue.length) {
         refetch();
         return 0;
       }
@@ -214,11 +224,41 @@ export function DiscoverScreen({
           />
         )}
 
+        {/* Top bar: brand + FOR YOU / NEARBY toggle + more */}
+        <div className="absolute inset-x-3 top-3 z-30 flex items-center gap-2">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/50 text-brand backdrop-blur">
+            <Flame className="h-5 w-5" fill="currentColor" />
+          </div>
+          <div className="flex flex-1 items-center rounded-full bg-black/40 p-1 backdrop-blur">
+            {(["foryou", "nearby"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setFeedTab(tab)}
+                className={`flex-1 rounded-full py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                  feedTab === tab ? "bg-white text-black" : "text-white/70"
+                }`}
+              >
+                {t(tab === "foryou" ? "discover.forYou" : "discover.nearby")}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setReportFor(current.userId)}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur active:bg-black/70"
+          >
+            <MoreVertical className="h-5 w-5" />
+          </button>
+        </div>
+
         {/* Photo progress bars */}
         {current.photos.length > 1 && (
-          <div className="absolute inset-x-3 top-3 z-20 flex gap-1.5">
+          <div className="absolute inset-x-3 top-14 z-20 flex gap-1.5">
             {current.photos.map((_, i) => (
-              <div key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
+              <div key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
                 <div className={`h-full rounded-full bg-white ${i === photoIdx ? "w-full" : "w-0"}`} />
               </div>
             ))}
@@ -228,63 +268,79 @@ export function DiscoverScreen({
         {/* LIKE / NOPE stamps */}
         <div
           style={{ opacity: likeOpacity }}
-          className="absolute left-5 top-16 z-20 -rotate-12 rounded-lg border-4 border-like px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-like"
+          className="absolute left-5 top-24 z-20 -rotate-12 rounded-lg border-4 border-brand px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-brand"
         >
           LIKE
         </div>
         <div
           style={{ opacity: nopeOpacity }}
-          className="absolute right-5 top-16 z-20 rotate-12 rounded-lg border-4 border-pass px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-pass"
+          className="absolute right-5 top-24 z-20 rotate-12 rounded-lg border-4 border-white px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-white"
         >
           NOPE
         </div>
 
-        {/* Report/block */}
-        <button
-          type="button"
-          onClick={() => setReportFor(current.userId)}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="absolute right-3 top-8 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur active:bg-black/60"
-        >
-          <span className="text-lg leading-none">⋮</span>
-        </button>
-
-        {/* Info overlay — sits above the action buttons */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-5 pb-28 pt-20">
-          <div className="flex items-end gap-2">
-            <h2 className="text-3xl font-bold text-white drop-shadow">{current.name}</h2>
-            <span className="pb-1 text-2xl font-light text-white/90">{current.age}</span>
+        {/* Info overlay — sits above the action bar */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/60 to-transparent px-5 pb-32 pt-24">
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-brand">
+            <Heart className="h-3.5 w-3.5" fill="currentColor" />
+            {t(`intent.${current.intent}`)}
           </div>
-          <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
-            <MapPin className="h-4 w-4" /> {current.cityLabel}
-          </p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-4xl font-extrabold leading-none text-white">{current.name}</h2>
+            <span className="text-3xl font-light text-white/90">{current.age}</span>
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => triggerSwipe("like")}
+              className="pointer-events-auto ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur active:bg-white/20"
+            >
+              <Heart className="h-5 w-5" />
+            </button>
+          </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-              {t(`intent.${current.intent}`)}
+            <span className="flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
+              <MapPin className="h-3.5 w-3.5" /> {current.cityLabel}
+            </span>
+            <span className="rounded-full bg-white/12 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
+              {current.gender === "male"
+                ? t("onboarding.gender.male")
+                : t("onboarding.gender.female")}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Action buttons — overlaid on the card, always visible, no scrolling */}
-      <div className="absolute inset-x-0 bottom-7 z-40 flex items-center justify-center gap-5">
-        <ActionButton onClick={() => triggerSwipe("pass")} variant="pass" label="pass">
-          <X className="h-7 w-7" strokeWidth={3} />
-        </ActionButton>
+      {/* Action bar — white pill (pass) · dark circle (gift) · pink pill (like) */}
+      <div className="absolute inset-x-0 bottom-6 z-40 flex items-center gap-3 px-5">
+        <button
+          type="button"
+          aria-label="pass"
+          onClick={() => triggerSwipe("pass")}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-white text-black shadow-xl shadow-black/40 transition-transform active:scale-95"
+        >
+          <HeartCrack className="h-7 w-7" strokeWidth={2.5} />
+        </button>
 
         {/* Gift / super-like — disabled ("coming soon") */}
         <button
           type="button"
           disabled
           title={t("discover.gift")}
-          className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-white/90 text-amber-400 opacity-50 shadow-lg"
+          className="flex h-14 w-14 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-white/70 shadow-lg"
         >
           <Gift className="h-5 w-5" />
         </button>
 
-        <ActionButton onClick={() => triggerSwipe("like")} variant="like" label="like">
-          <Heart className="h-7 w-7" strokeWidth={2.5} fill="currentColor" />
-        </ActionButton>
+        <button
+          type="button"
+          aria-label="like"
+          onClick={() => triggerSwipe("like")}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-16 flex-1 touch-manipulation items-center justify-center rounded-full bg-brand text-black shadow-xl shadow-brand/40 transition-transform active:scale-95"
+        >
+          <Heart className="h-7 w-7" fill="currentColor" strokeWidth={2} />
+        </button>
       </div>
 
       {/* Match celebration — stays until the user chooses an action */}
@@ -349,30 +405,3 @@ export function DiscoverScreen({
   );
 }
 
-function ActionButton({
-  children,
-  onClick,
-  variant,
-  label,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  variant: "like" | "pass";
-  label: string;
-}) {
-  const styles =
-    variant === "like"
-      ? "bg-gradient-to-br from-emerald-400 to-like text-white"
-      : "bg-white text-pass";
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      onPointerDown={(e) => e.stopPropagation()}
-      className={`flex h-16 w-16 touch-manipulation items-center justify-center rounded-full shadow-xl shadow-black/30 transition-transform active:scale-90 ${styles}`}
-    >
-      {children}
-    </button>
-  );
-}

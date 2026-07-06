@@ -51,10 +51,10 @@ export function initTelegram(): void {
  * app never renders in a light theme.)
  */
 const DARK = {
-  bg: "#0b0b10",
-  secondary: "#17171f",
+  bg: "#000000",
+  secondary: "#121214",
   text: "#ffffff",
-  hint: "#8b8b96",
+  hint: "#8b8b93",
 };
 
 export function applyTheme(): void {

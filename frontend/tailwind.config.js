@@ -4,11 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Brand accent — warm romantic pink→orange (dating-app style).
-        // `from-brand to-brand-dark` produces the signature pink→orange gradient.
+        // Brand accent — vivid hot pink / magenta (matches reference design).
         brand: {
-          DEFAULT: "#fd267a",
-          dark: "#ff6036",
+          DEFAULT: "#ff2e9a",
+          dark: "#e81f88",
         },
         like: "#2ecc71",
         pass: "#ff4458",
