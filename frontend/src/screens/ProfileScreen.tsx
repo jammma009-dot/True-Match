@@ -8,7 +8,9 @@ import { haptics, openTelegramLink } from "../lib/telegram";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { EditProfileScreen } from "./EditProfileScreen";
 import { PremiumModal } from "../components/PremiumModal";
+import { PresentModal } from "../components/PresentModal";
 import { PremiumBadge } from "../components/PremiumBadge";
+import { Gift } from "lucide-react";
 import type { OwnProfile } from "../store/useStore";
 
 /** Rough profile-completeness percentage for the nudge bar. */
@@ -34,10 +36,14 @@ export function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
+  const [showPresent, setShowPresent] = useState(false);
   const contactUsername = me?.settings?.contactUsername ?? null;
   const paymentUsername = me?.settings?.paymentUsername ?? null;
   const priceStars = me?.settings?.premiumPriceStars ?? 250;
+  const presentPrice = me?.settings?.presentPriceStars ?? 100;
   const isPremium = me?.user.isPremium ?? false;
+  const isBoosted = me?.user.isBoosted ?? false;
+  const myUserId = me?.user.id ?? "";
 
   const handleDelete = async () => {
     if (!window.confirm(t("profile.deleteConfirm"))) return;
@@ -236,6 +242,29 @@ export function ProfileScreen() {
           <span className="flex-1 font-semibold">{t("profile.premium")}</span>
           <ChevronRight className="h-5 w-5 text-white/80" />
         </button>
+
+        {/* Buy Present (Boost) */}
+        <button
+          type="button"
+          onClick={() => {
+            haptics.impact("light");
+            setShowPresent(true);
+          }}
+          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-pink-500 to-brand px-4 py-4 text-left text-white active:opacity-90"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+            <Gift className="h-4 w-4" />
+          </span>
+          <span className="flex-1 font-semibold">
+            {t("profile.present")}
+            {isBoosted && (
+              <span className="ml-2 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-bold uppercase">
+                {t("present.activeTag")}
+              </span>
+            )}
+          </span>
+          <ChevronRight className="h-5 w-5 text-white/80" />
+        </button>
       </div>
 
       {/* Delete profile */}
@@ -263,6 +292,22 @@ export function ProfileScreen() {
             );
           }}
           onClose={() => setShowPremium(false)}
+        />
+      )}
+
+      {showPresent && (
+        <PresentModal
+          targetUserId={myUserId}
+          isGift={false}
+          priceStars={presentPrice}
+          onPaid={() => {
+            queryClient.invalidateQueries({ queryKey: ["me"] });
+            window.setTimeout(
+              () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+              1500,
+            );
+          }}
+          onClose={() => setShowPresent(false)}
         />
       )}
     </div>

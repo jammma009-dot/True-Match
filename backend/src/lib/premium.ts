@@ -27,3 +27,30 @@ export const PREMIUM_DAYS = 30;
 export function isPremiumActive(premiumUntil: Date | null | undefined): boolean {
   return !!premiumUntil && premiumUntil.getTime() > Date.now();
 }
+
+// ---------- Present / Boost ----------
+
+/** Default Present (boost) price in Telegram Stars if the admin hasn't set one. */
+export const DEFAULT_PRESENT_STARS = 100;
+
+/** How many days each present/boost adds. */
+export const BOOST_DAYS = 3;
+
+/** True if the given boostUntil date represents an active boost. */
+export function isBoostActive(boostUntil: Date | null | undefined): boolean {
+  return !!boostUntil && boostUntil.getTime() > Date.now();
+}
+
+/**
+ * Compute the new boost expiry when adding `days` of boost. Boosts STACK: if a
+ * boost is already active, the new time is added on top of the remaining time;
+ * otherwise it starts from now.
+ */
+export function stackedBoostUntil(
+  current: Date | null | undefined,
+  days: number = BOOST_DAYS,
+  now: Date = new Date(),
+): Date {
+  const base = current && current.getTime() > now.getTime() ? current.getTime() : now.getTime();
+  return new Date(base + days * 86_400_000);
+}

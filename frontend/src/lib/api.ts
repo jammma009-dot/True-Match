@@ -183,6 +183,12 @@ export const api = {
       body: "{}",
     }),
 
+  createBoostInvoice: (targetUserId: string) =>
+    request<{ link: string }>("/api/premium/boost/invoice", {
+      method: "POST",
+      body: JSON.stringify({ targetUserId }),
+    }),
+
   markLikesSeen: () =>
     request<{ ok: true }>("/api/likes/seen", { method: "POST", body: "{}" }),
 

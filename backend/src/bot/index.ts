@@ -2,7 +2,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { t, Locale, normalizeLocale } from "../lib/locale";
-import { PREMIUM_DAYS } from "../lib/premium";
+import { PREMIUM_DAYS, BOOST_DAYS, stackedBoostUntil } from "../lib/premium";
 
 /**
  * grammy bot instance. Handles the pre-Mini-App /start flow:
@@ -129,42 +129,96 @@ bot.on("pre_checkout_query", async (ctx) => {
   }
 });
 
-// On successful payment, activate Premium for the payer.
+/** Notify the configured Star recipient (numeric id only) about a purchase. */
+async function notifyStarRecipient(text: string): Promise<void> {
+  const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+  const recipient = settings?.starRecipient?.trim();
+  if (recipient && /^\d+$/.test(recipient)) {
+    await bot.api.sendMessage(Number(recipient), text).catch(() => undefined);
+  }
+}
+
+// On successful payment, apply Premium or a Boost (present).
 bot.on("message:successful_payment", async (ctx) => {
   const payment = ctx.message.successful_payment;
   const payload = payment?.invoice_payload ?? "";
-  const match = /^premium:(.+)$/.exec(payload);
-  if (!match) return;
-  const userId = match[1];
 
-  const until = new Date(Date.now() + PREMIUM_DAYS * 86_400_000);
-  try {
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { premiumUntil: until },
-    });
-
-    // Thank the buyer.
-    const locale = user.language as Locale;
-    await ctx.reply(
-      `*${t(locale, "bot.premium.title")}*\n\n${t(locale, "bot.premium.body")}`,
-      { parse_mode: "Markdown", reply_markup: openAppKeyboard(locale) },
-    ).catch(() => undefined);
-
-    // Optionally notify the configured Star recipient (numeric id only).
-    const settings = await prisma.settings.findUnique({ where: { id: 1 } });
-    const recipient = settings?.starRecipient?.trim();
-    if (recipient && /^\d+$/.test(recipient)) {
-      await bot.api
-        .sendMessage(
-          Number(recipient),
-          `New Premium purchase: ${payment.total_amount} ⭐ (user ${userId}).`,
-        )
+  // ----- Premium: premium:<userId> -----
+  const premiumMatch = /^premium:(.+)$/.exec(payload);
+  if (premiumMatch) {
+    const userId = premiumMatch[1];
+    const until = new Date(Date.now() + PREMIUM_DAYS * 86_400_000);
+    try {
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { premiumUntil: until },
+      });
+      const locale = user.language as Locale;
+      await ctx
+        .reply(`*${t(locale, "bot.premium.title")}*\n\n${t(locale, "bot.premium.body")}`, {
+          parse_mode: "Markdown",
+          reply_markup: openAppKeyboard(locale),
+        })
         .catch(() => undefined);
+      await notifyStarRecipient(
+        `New Premium purchase: ${payment.total_amount} ⭐ (user ${userId}).`,
+      );
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[bot] failed to activate premium:", err);
     }
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("[bot] failed to activate premium:", err);
+    return;
+  }
+
+  // ----- Boost / Present: boost:<targetUserId>:<buyerUserId> -----
+  const boostMatch = /^boost:([^:]+):(.+)$/.exec(payload);
+  if (boostMatch) {
+    const targetUserId = boostMatch[1];
+    const buyerUserId = boostMatch[2];
+    const isGift = targetUserId !== buyerUserId;
+    try {
+      const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!target) return;
+      // Stack the boost on top of any remaining time.
+      const boostUntil = stackedBoostUntil(target.boostUntil, BOOST_DAYS);
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: { boostUntil },
+      });
+
+      // Thank the buyer.
+      const buyer = await prisma.user.findUnique({ where: { id: buyerUserId } });
+      if (buyer) {
+        const bl = buyer.language as Locale;
+        const key = isGift ? "bot.present.sent" : "bot.boost.body";
+        await ctx
+          .reply(`*${t(bl, "bot.boost.title")}*\n\n${t(bl, key)}`, {
+            parse_mode: "Markdown",
+            reply_markup: openAppKeyboard(bl),
+          })
+          .catch(() => undefined);
+      }
+
+      // If it's a gift, notify the recipient too.
+      if (isGift) {
+        const tl = target.language as Locale;
+        await bot.api
+          .sendMessage(
+            Number(target.telegramId),
+            `*${t(tl, "bot.present.title")}*\n\n${t(tl, "bot.present.body")}`,
+            { parse_mode: "Markdown", reply_markup: openAppKeyboard(tl) },
+          )
+          .catch(() => undefined);
+      }
+
+      await notifyStarRecipient(
+        `New ${isGift ? "Present (gift)" : "Boost"} purchase: ${payment.total_amount} ⭐ (buyer ${buyerUserId} → ${targetUserId}).`,
+      );
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[bot] failed to apply boost:", err);
+    }
+    return;
   }
 });
 

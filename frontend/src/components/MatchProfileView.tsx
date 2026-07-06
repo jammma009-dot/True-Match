@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, MapPin, Ruler, Heart, MessageCircle } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, MapPin, Ruler, Heart, MessageCircle, Gift } from "lucide-react";
 import { api } from "../lib/api";
-import { useT } from "../store/useStore";
+import { useStore, useT } from "../store/useStore";
 import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { PremiumBadge } from "./PremiumBadge";
+import { PresentModal } from "./PresentModal";
 import { Spinner } from "./ui";
 import { haptics } from "../lib/telegram";
 
@@ -21,7 +22,10 @@ export function MatchProfileView({
   onClose: () => void;
 }) {
   const t = useT();
+  const queryClient = useQueryClient();
+  const presentPrice = useStore((s) => s.me?.settings?.presentPriceStars) ?? 100;
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [showPresent, setShowPresent] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["matchProfile", matchId],
@@ -149,20 +153,46 @@ export function MatchProfileView({
             )}
           </div>
 
-          {/* Message them */}
-          <div className="flex-shrink-0 border-t border-white/5 p-4">
-            <button
-              type="button"
-              onClick={() => {
-                haptics.impact("light");
-                onClose();
-              }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-4 font-semibold text-white active:opacity-90"
-            >
-              <MessageCircle className="h-5 w-5" />
-              {t("profileView.message")}
-            </button>
+          {/* Actions: send present + message them */}
+          <div className="flex-shrink-0 gap-3 border-t border-white/5 p-4">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  haptics.impact("light");
+                  setShowPresent(true);
+                }}
+                className="flex flex-shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-brand px-4 py-4 font-semibold text-white active:opacity-90"
+              >
+                <Gift className="h-5 w-5" />
+                {t("profileView.present")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  haptics.impact("light");
+                  onClose();
+                }}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-4 font-semibold text-white active:opacity-90"
+              >
+                <MessageCircle className="h-5 w-5" />
+                {t("profileView.message")}
+              </button>
+            </div>
           </div>
+
+          {showPresent && (
+            <PresentModal
+              targetUserId={p.userId}
+              targetName={p.name}
+              isGift
+              priceStars={presentPrice}
+              onPaid={() => {
+                queryClient.invalidateQueries({ queryKey: ["matchProfile", matchId] });
+              }}
+              onClose={() => setShowPresent(false)}
+            />
+          )}
         </>
       )}
     </div>

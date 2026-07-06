@@ -191,6 +191,8 @@
             </p>
             <label>Premium price (Telegram Stars ⭐)</label>
             <input id="set-price" type="number" min="1" step="1" placeholder="e.g. 250" value="${s.premiumPriceStars ?? ""}" />
+            <label>Present / Boost price (Telegram Stars ⭐) — 3 days on top of the feed; users can buy for themselves or gift it to others (stacks)</label>
+            <input id="set-present-price" type="number" min="1" step="1" placeholder="e.g. 100" value="${s.presentPriceStars ?? ""}" />
             <label>Purchase notification ID — Telegram numeric ID that gets a "someone bought Premium" message (optional; does NOT receive the Stars)</label>
             <input id="set-recipient" type="text" placeholder="e.g. 123456789 (numeric id) — notification only" value="${escapeHtml(s.starRecipient || "")}" />
 
@@ -203,12 +205,14 @@
 
       async function saveSettings() {
         const priceRaw = document.getElementById("set-price").value.trim();
+        const presentPriceRaw = document.getElementById("set-present-price").value.trim();
         const body = {
           contactUsername: document.getElementById("set-contact").value.trim(),
           paymentUsername: document.getElementById("set-payment").value.trim(),
           starRecipient: document.getElementById("set-recipient").value.trim(),
         };
         if (priceRaw) body.premiumPriceStars = Number(priceRaw);
+        if (presentPriceRaw) body.presentPriceStars = Number(presentPriceRaw);
         const res = await api("/api/admin/settings", { method: "POST", body: JSON.stringify(body) });
         const msg = document.getElementById("settings-msg");
         if (res.ok) {
@@ -217,6 +221,7 @@
           document.getElementById("set-contact").value = res.contactUsername || "";
           document.getElementById("set-payment").value = res.paymentUsername || "";
           document.getElementById("set-price").value = res.premiumPriceStars ?? "";
+          document.getElementById("set-present-price").value = res.presentPriceStars ?? "";
           document.getElementById("set-recipient").value = res.starRecipient || "";
         } else {
           msg.style.color = "#e74c3c";
@@ -310,12 +315,15 @@
         const premiumTag = u.isPremium
           ? `<span class="tag" style="background:#e8a11c;color:#3a2600">⭐ PREMIUM${u.premiumUntil ? " until " + u.premiumUntil.slice(0, 10) : ""}</span>`
           : "";
+        const boostTag = u.isBoosted
+          ? `<span class="tag" style="background:#3a7bd5;color:#fff">🚀 BOOST${u.boostUntil ? " until " + u.boostUntil.slice(0, 10) : ""}</span>`
+          : "";
         const photos = p && p.photos.length
           ? `<div class="photos">${p.photos.map(url => `<img src="${url}" onerror="this.style.opacity=0.2"/>`).join("")}</div>`
           : "";
         const info = p
-          ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned} ${premiumTag}`
-          : `<strong class="meta">(no profile — only /start)</strong> ${banned} ${premiumTag}`;
+          ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned} ${premiumTag} ${boostTag}`
+          : `<strong class="meta">(no profile — only /start)</strong> ${banned} ${premiumTag} ${boostTag}`;
         const banBtn = u.isBanned
           ? `<button class="btn-unban" onclick="unbanUser('${u.userId}')">Unban</button>`
           : `<button class="btn-ban" onclick="banUser('${u.userId}')">Ban</button>`;
@@ -323,6 +331,9 @@
         const premiumBtn = u.isPremium
           ? `<button style="background:#7a5a00" onclick="revokePremium('${u.userId}')">Revoke Premium</button>`
           : `<button style="background:#e8a11c;color:#3a2600" onclick="grantPremium('${u.userId}')">Grant Premium</button>`;
+        const boostBtn = u.isBoosted
+          ? `<button style="background:#1f4a80" onclick="revokeBoost('${u.userId}')">Revoke Boost</button>`
+          : `<button style="background:#3a7bd5" onclick="grantBoost('${u.userId}')">Grant Boost</button>`;
         return `
           <div class="card">
             <div class="row">${info}</div>
@@ -331,6 +342,7 @@
             <div class="actions">
               ${editBtn}
               ${premiumBtn}
+              ${boostBtn}
               ${banBtn}
               <button class="btn-delete" onclick="deleteUser('${u.userId}')">Delete</button>
             </div>
@@ -393,6 +405,24 @@
         if (res.error) { alert("Error: " + res.error); return; }
         loadUsers();
       }
+
+      async function grantBoost(userId) {
+        const input = prompt("Grant Boost for how many days? (each present = 3 days)", "3");
+        if (input === null) return;
+        const days = Number(input);
+        if (!Number.isFinite(days) || days <= 0) { alert("Enter a positive number of days."); return; }
+        const res = await api(`/api/admin/users/${userId}/boost`, { method: "POST", body: JSON.stringify({ days }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
+      async function revokeBoost(userId) {
+        if (!confirm("Revoke this user's Boost now?")) return;
+        const res = await api(`/api/admin/users/${userId}/boost`, { method: "POST", body: JSON.stringify({ days: 0 }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
       async function unbanUser(userId) {
         await api(`/api/admin/users/${userId}/unban`, { method: "POST", body: "{}" });
         loadUsers();

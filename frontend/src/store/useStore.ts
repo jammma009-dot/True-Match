@@ -35,6 +35,8 @@ export interface MeResponse {
     isBanned: boolean;
     isPremium?: boolean;
     premiumUntil?: string | null;
+    isBoosted?: boolean;
+    boostUntil?: string | null;
   };
   profile: OwnProfile | null;
   stats?: { views: number; likes: number; matches: number; days: number };
@@ -42,6 +44,7 @@ export interface MeResponse {
     contactUsername: string | null;
     paymentUsername: string | null;
     premiumPriceStars?: number;
+    presentPriceStars?: number;
   };
   reference: {
     cities: CityRef[];

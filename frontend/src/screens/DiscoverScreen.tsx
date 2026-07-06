@@ -284,7 +284,7 @@ export function DiscoverScreen({
   const nopeOpacity = leaving === "pass" ? 1 : Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
 
   return (
-    <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-3 pb-2">
+    <div className="relative flex h-full w-full select-none flex-col overflow-hidden px-2 pb-1">
       {/* Brand logo header (same LogoHeader used across the app) */}
       <LogoHeader />
 

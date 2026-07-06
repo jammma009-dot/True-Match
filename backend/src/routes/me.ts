@@ -7,7 +7,12 @@ import { toOwnProfile } from "../utils/serialize";
 import { CITIES } from "../utils/cities";
 import { INTERESTS, MIN_HEIGHT, MAX_HEIGHT } from "../utils/interests";
 import { getSettings } from "../lib/settings";
-import { isPremiumActive, DEFAULT_PREMIUM_STARS } from "../lib/premium";
+import {
+  isPremiumActive,
+  DEFAULT_PREMIUM_STARS,
+  isBoostActive,
+  DEFAULT_PRESENT_STARS,
+} from "../lib/premium";
 import { Language } from "@prisma/client";
 
 const router = Router();
@@ -48,6 +53,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       contactUsername: settings.contactUsername,
       paymentUsername: settings.paymentUsername,
       premiumPriceStars: settings.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
+      presentPriceStars: settings.presentPriceStars ?? DEFAULT_PRESENT_STARS,
     },
     user: {
       id: user.id,
@@ -55,6 +61,8 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       isBanned: user.isBanned,
       isPremium: isPremiumActive(user.premiumUntil),
       premiumUntil: user.premiumUntil ? user.premiumUntil.toISOString() : null,
+      isBoosted: isBoostActive(user.boostUntil),
+      boostUntil: user.boostUntil ? user.boostUntil.toISOString() : null,
     },
     profile: profile ? toOwnProfile(profile, profile.photos) : null,
     stats: { views, likes, matches, days },

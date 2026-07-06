@@ -3,19 +3,30 @@ import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { toPublicProfile } from "../utils/serialize";
 import { CITY_VALUES } from "../utils/cities";
-import { isPremiumActive } from "../lib/premium";
+import { isPremiumActive, isBoostActive } from "../lib/premium";
 import { Gender, City } from "@prisma/client";
 
-type RowWithUser = { user: { premiumUntil: Date | null } };
+type RowWithUser = { user: { premiumUntil: Date | null; boostUntil: Date | null } };
 
 /**
- * Premium perk ("priority in feed" / "gift priority"): Premium profiles are
- * surfaced before free ones, while staying shuffled within each group.
+ * Ordering priority (each group shuffled internally):
+ *   1. Boosted (present) users — "stay on top"
+ *   2. Premium users — "priority in feed"
+ *   3. Everyone else
  */
 function prioritizePremium<T extends RowWithUser>(rows: T[]): T[] {
-  const premium = shuffle(rows.filter((r) => isPremiumActive(r.user.premiumUntil)));
-  const normal = shuffle(rows.filter((r) => !isPremiumActive(r.user.premiumUntil)));
-  return [...premium, ...normal];
+  const boosted = shuffle(rows.filter((r) => isBoostActive(r.user.boostUntil)));
+  const premium = shuffle(
+    rows.filter(
+      (r) => !isBoostActive(r.user.boostUntil) && isPremiumActive(r.user.premiumUntil),
+    ),
+  );
+  const normal = shuffle(
+    rows.filter(
+      (r) => !isBoostActive(r.user.boostUntil) && !isPremiumActive(r.user.premiumUntil),
+    ),
+  );
+  return [...boosted, ...premium, ...normal];
 }
 
 const router = Router();
@@ -89,7 +100,10 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     userId: { notIn: Array.from(excludeIds) },
     birthdate: { gte: minBirth, lte: maxBirth },
   };
-  const include = { photos: true, user: { select: { id: true, premiumUntil: true } } };
+  const include = {
+    photos: true,
+    user: { select: { id: true, premiumUntil: true, boostUntil: true } },
+  };
 
   let ordered;
 

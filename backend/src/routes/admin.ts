@@ -8,7 +8,12 @@ import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected } from "../bot/notify";
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 import { getSettings } from "../lib/settings";
-import { DEFAULT_PREMIUM_STARS, isPremiumActive } from "../lib/premium";
+import {
+  DEFAULT_PREMIUM_STARS,
+  isPremiumActive,
+  DEFAULT_PRESENT_STARS,
+  isBoostActive,
+} from "../lib/premium";
 import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
 
 const router = Router();
@@ -26,6 +31,7 @@ router.get("/settings", async (_req: Request, res: Response) => {
     contactUsername: s.contactUsername,
     paymentUsername: s.paymentUsername,
     premiumPriceStars: s.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
+    presentPriceStars: s.presentPriceStars ?? DEFAULT_PRESENT_STARS,
     starRecipient: s.starRecipient,
   });
 });
@@ -34,6 +40,7 @@ const settingsSchema = z.object({
   contactUsername: z.string().trim().max(64).optional(),
   paymentUsername: z.string().trim().max(64).optional(),
   premiumPriceStars: z.coerce.number().int().min(1).max(100000).optional(),
+  presentPriceStars: z.coerce.number().int().min(1).max(100000).optional(),
   starRecipient: z.string().trim().max(64).optional(),
 });
 router.post(
@@ -47,6 +54,7 @@ router.post(
       contactUsername: clean(data.contactUsername),
       paymentUsername: clean(data.paymentUsername),
       premiumPriceStars: data.premiumPriceStars ?? null,
+      presentPriceStars: data.presentPriceStars ?? null,
       starRecipient: clean(data.starRecipient),
     };
     const s = await prisma.settings.upsert({
@@ -59,6 +67,7 @@ router.post(
       contactUsername: s.contactUsername,
       paymentUsername: s.paymentUsername,
       premiumPriceStars: s.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
+      presentPriceStars: s.presentPriceStars ?? DEFAULT_PRESENT_STARS,
       starRecipient: s.starRecipient,
     });
   },
@@ -255,6 +264,8 @@ router.get("/users", async (req: Request, res: Response) => {
       isBanned: u.isBanned,
       isPremium: isPremiumActive(u.premiumUntil),
       premiumUntil: u.premiumUntil ? u.premiumUntil.toISOString() : null,
+      isBoosted: isBoostActive(u.boostUntil),
+      boostUntil: u.boostUntil ? u.boostUntil.toISOString() : null,
       createdAt: u.createdAt.toISOString(),
       profile: u.profile
         ? {
@@ -378,6 +389,38 @@ router.post(
       premiumUntil: updated.premiumUntil
         ? updated.premiumUntil.toISOString()
         : null,
+    });
+  },
+);
+
+/**
+ * POST /api/admin/users/:userId/boost { days }
+ * Manually grant a Boost/Present (e.g. after a card payment). Sets boostUntil
+ * to now + days. days=0 clears it.
+ */
+const boostSchema = z.object({
+  days: z.coerce.number().int().min(0).max(3650),
+});
+router.post(
+  "/users/:userId/boost",
+  validateBody(boostSchema),
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const { days } = req.body as z.infer<typeof boostSchema>;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: "user_not_found" });
+      return;
+    }
+    const boostUntil = days > 0 ? new Date(Date.now() + days * 86_400_000) : null;
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { boostUntil },
+    });
+    res.json({
+      ok: true,
+      isBoosted: isBoostActive(updated.boostUntil),
+      boostUntil: updated.boostUntil ? updated.boostUntil.toISOString() : null,
     });
   },
 );
