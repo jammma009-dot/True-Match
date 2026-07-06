@@ -119,7 +119,8 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  getDiscovery: () => request<{ queue: PublicProfile[] }>("/api/discovery"),
+  getDiscovery: (scope: "foryou" | "nearby" = "foryou") =>
+    request<{ queue: PublicProfile[] }>(`/api/discovery?scope=${scope}`),
 
   swipe: (targetUserId: string, action: "like" | "pass") =>
     request<{ ok: true; matched: boolean; matchId: string | null; remaining: number }>(

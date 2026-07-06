@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Heart, HeartCrack, Gift, MapPin, Sparkles, RefreshCw, MessageCircle, MoreVertical } from "lucide-react";
 import { api, PublicProfile, MatchListItem } from "../lib/api";
-import { useStore, useT } from "../store/useStore";
+import { useT } from "../store/useStore";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
 
@@ -15,11 +15,10 @@ export function DiscoverScreen({
   onOpenChat: (m: MatchListItem) => void;
 }) {
   const t = useT();
-  const myCity = useStore((s) => s.me?.profile?.city);
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["discovery"],
-    queryFn: api.getDiscovery,
+    queryKey: ["discovery", feedTab],
+    queryFn: () => api.getDiscovery(feedTab),
   });
 
   const [queue, setQueue] = useState<PublicProfile[]>([]);
@@ -43,27 +42,13 @@ export function DiscoverScreen({
     }
   }, [data]);
 
-  useEffect(() => {
-    setIndex(0);
-    setPhotoIdx(0);
-  }, [feedTab]);
-
-  // "Nearby" shows same-city people first, then automatically continues with
-  // people from other cities once the local ones run out.
-  const visibleQueue =
-    feedTab === "nearby" && myCity
-      ? [
-          ...queue.filter((p) => p.city === myCity),
-          ...queue.filter((p) => p.city !== myCity),
-        ]
-      : queue;
-  const current = visibleQueue[index];
+  const current = queue[index];
 
   const advance = () => {
     setPhotoIdx(0);
     setIndex((i) => {
       const next = i + 1;
-      if (next >= visibleQueue.length) {
+      if (next >= queue.length) {
         refetch();
         return 0;
       }

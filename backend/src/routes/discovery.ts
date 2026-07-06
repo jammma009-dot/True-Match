@@ -52,27 +52,46 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
   const oppositeGender: Gender =
     myProfile.gender === "male" ? "female" : "male";
 
-  const candidates = await prisma.profile.findMany({
-    where: {
-      status: "approved",
-      gender: oppositeGender,
-      user: { isBanned: false },
-      userId: { notIn: Array.from(excludeIds) },
-    },
-    include: { photos: true, user: { select: { id: true } } },
-    take: 40,
-  });
+  const scope = req.query.scope === "nearby" ? "nearby" : "foryou";
 
-  // Same-city first, then everyone else. Light shuffle within groups.
-  const sameCity = candidates.filter((c) => c.city === myProfile.city);
-  const otherCity = candidates.filter((c) => c.city !== myProfile.city);
-  const ordered = [...shuffle(sameCity), ...shuffle(otherCity)].slice(0, 20);
+  const baseWhere = {
+    status: "approved" as const,
+    gender: oppositeGender,
+    user: { isBanned: false },
+    userId: { notIn: Array.from(excludeIds) },
+  };
+  const include = { photos: true, user: { select: { id: true } } };
 
-  const queue = ordered.map((c) =>
-    toPublicProfile(c.user, c, c.photos),
-  );
+  // Fetch same-city and other-city candidates in SEPARATE queries so that
+  // same-city people are always found (not lost inside a generic slice).
+  const [sameCityRaw, otherCityRaw] = await Promise.all([
+    prisma.profile.findMany({
+      where: { ...baseWhere, city: myProfile.city },
+      include,
+      take: 50,
+    }),
+    prisma.profile.findMany({
+      where: { ...baseWhere, city: { not: myProfile.city } },
+      include,
+      take: 50,
+    }),
+  ]);
 
-  res.json({ queue });
+  const sameCity = shuffle(sameCityRaw);
+  const otherCity = shuffle(otherCityRaw);
+
+  // "nearby": same-city first, then other cities as a fallback once the local
+  // ones run out. "foryou": a shuffled mix of everyone from all locations.
+  const ordered =
+    scope === "nearby"
+      ? [...sameCity, ...otherCity]
+      : shuffle([...sameCityRaw, ...otherCityRaw]);
+
+  const queue = ordered
+    .slice(0, 30)
+    .map((c) => toPublicProfile(c.user, c, c.photos));
+
+  res.json({ queue, scope });
 });
 
 function shuffle<T>(arr: T[]): T[] {
