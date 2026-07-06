@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Send, ChevronLeft, ExternalLink } from "lucide-react";
+import { MoreVertical, Send, ChevronLeft, ExternalLink, Gift } from "lucide-react";
 import { api, ChatMessage, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { getSocket } from "../lib/socket";
@@ -167,6 +167,17 @@ export function ChatScreen({
         ) : (
           messages.map((m) => {
             const mine = m.senderId === myUserId;
+            if (m.isGift) {
+              // Special highlighted "sent you a gift" message.
+              return (
+                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div className="flex max-w-[80%] items-center gap-2 rounded-2xl border border-amber-400/50 bg-amber-400/15 px-4 py-2.5 text-[15px] font-semibold text-amber-300">
+                    <Gift className="h-5 w-5 flex-shrink-0" />
+                    <span>{mine ? t("chat.giftSent") : t("chat.giftReceived")}</span>
+                  </div>
+                </div>
+              );
+            }
             return (
               <div
                 key={m.id}

@@ -8,6 +8,7 @@ export interface CreateMessageResult {
     matchId: string;
     senderId: string;
     body: string;
+    isGift: boolean;
     createdAt: string;
   };
   recipientId?: string;
@@ -61,6 +62,7 @@ export async function createMessage(
       matchId: msg.matchId,
       senderId: msg.senderId,
       body: msg.body,
+      isGift: msg.isGift,
       createdAt: msg.createdAt.toISOString(),
     },
   };

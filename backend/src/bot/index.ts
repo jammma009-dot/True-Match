@@ -3,6 +3,7 @@ import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { t, Locale, normalizeLocale } from "../lib/locale";
 import { PREMIUM_DAYS, BOOST_DAYS, stackedBoostUntil } from "../lib/premium";
+import { createMatchAndCelebrate } from "../services/match";
 
 /**
  * grammy bot instance. Handles the pre-Mini-App /start flow:
@@ -199,8 +200,13 @@ bot.on("message:successful_payment", async (ctx) => {
           .catch(() => undefined);
       }
 
-      // If it's a gift, notify the recipient too.
+      // If it's a gift, open a chat with a highlighted "sent you a gift" first
+      // message (no need to wait for a like back), and notify the recipient.
       if (isGift) {
+        await createMatchAndCelebrate(buyerUserId, targetUserId, {
+          gift: { fromUserId: buyerUserId },
+        }).catch(() => undefined);
+
         const tl = target.language as Locale;
         await bot.api
           .sendMessage(

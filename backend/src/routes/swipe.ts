@@ -6,37 +6,12 @@ import { validateBody } from "../middleware/validate";
 import { checkAndIncrSwipe } from "../lib/ratelimit";
 import { notifyNewMatch, notifyNewLike } from "../bot/notify";
 import { emitToUser } from "../socket";
-import { computeAge } from "../utils/age";
-import { cityLabel } from "../utils/cities";
 import { toPublicProfile } from "../utils/serialize";
 import { isPremiumActive, FREE_DAILY_LIKES, startOfDayTashkent } from "../lib/premium";
-import { SwipeAction, Prisma } from "@prisma/client";
+import { orderPair, createMatchAndCelebrate } from "../services/match";
+import { SwipeAction } from "@prisma/client";
 
 const router = Router();
-
-type FullUser = Prisma.UserGetPayload<{
-  include: { profile: { include: { photos: true } } };
-}>;
-
-/** Build a compact "match list item"-shaped payload for a matched user. */
-function miniMatchUser(u: FullUser) {
-  const p = u.profile;
-  const photo =
-    p?.photos.slice().sort((a, b) => a.position - b.position)[0]?.url ?? null;
-  return {
-    userId: u.id,
-    name: p?.name ?? "",
-    age: p ? computeAge(p.birthdate) : 0,
-    city: p?.city ?? "",
-    cityLabel: p ? cityLabel(p.city) : "",
-    photo,
-  };
-}
-
-/** Order a pair of user ids so matches are stored uniquely & unordered. */
-export function orderPair(a: string, b: string): [string, string] {
-  return a < b ? [a, b] : [b, a];
-}
 
 const swipeSchema = z.object({
   targetUserId: z.string().min(1),
@@ -154,49 +129,15 @@ router.post(
         },
       });
 
-      if (reciprocal && reciprocal.action === "like") {
-        const [userAId, userBId] = orderPair(user.id, targetUserId);
-        const match = await prisma.match.upsert({
-          where: { userAId_userBId: { userAId, userBId } },
-          create: { userAId, userBId },
-          update: {},
-        });
+      // A match forms on a mutual like OR when a PREMIUM user likes someone
+      // (one-sided) — Premium can start chatting without waiting to be liked back.
+      const mutual = reciprocal?.action === "like";
+      if (mutual || premium) {
+        matchId = await createMatchAndCelebrate(user.id, targetUserId);
         matched = true;
-        matchId = match.id;
-
-        // Notify both users via the bot (fire and forget).
+        // Bot notifications to both sides.
         void notifyNewMatch(user.id);
         void notifyNewMatch(targetUserId);
-
-        // Real-time: push a "new match" event to BOTH users so the celebration
-        // appears instantly on both sides — not only for whoever swiped last.
-        const [meFull, targetFull] = await Promise.all([
-          prisma.user.findUnique({
-            where: { id: user.id },
-            include: { profile: { include: { photos: true } } },
-          }),
-          prisma.user.findUnique({
-            where: { id: targetUserId },
-            include: { profile: { include: { photos: true } } },
-          }),
-        ]);
-        const now = new Date().toISOString();
-        if (targetFull) {
-          emitToUser(user.id, "match:new", {
-            matchId: match.id,
-            createdAt: now,
-            user: miniMatchUser(targetFull),
-            lastMessage: null,
-          });
-        }
-        if (meFull) {
-          emitToUser(targetUserId, "match:new", {
-            matchId: match.id,
-            createdAt: now,
-            user: miniMatchUser(meFull),
-            lastMessage: null,
-          });
-        }
       } else if (!reciprocal) {
         // Not a mutual like (and the target hasn't acted on me yet):
         // tell them someone liked their profile (identity kept private).

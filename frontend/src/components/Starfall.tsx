@@ -4,11 +4,14 @@
  * whole app, like Telegram's animated backgrounds. Pure CSS; sits at z-index -1
  * so app content (cards, screens) renders on top.
  */
+// Start points are OFF-SCREEN (bottom/left) so each star is only ever seen
+// while crossing the visible area, then exits off-screen — never a visible
+// start/stop. Varied starts make them cross different parts of the screen.
 const STARS = [
-  { top: "82%", left: "10%", delay: "1s", duration: "22s" },
-  { top: "64%", left: "34%", delay: "9s", duration: "26s" },
-  { top: "74%", left: "62%", delay: "17s", duration: "24s" },
-  { top: "52%", left: "22%", delay: "27s", duration: "28s" },
+  { top: "85%", left: "-20%", delay: "2s", duration: "22s" },
+  { top: "118%", left: "18%", delay: "10s", duration: "27s" },
+  { top: "118%", left: "52%", delay: "19s", duration: "24s" },
+  { top: "55%", left: "-20%", delay: "30s", duration: "29s" },
 ];
 
 export function Starfall() {

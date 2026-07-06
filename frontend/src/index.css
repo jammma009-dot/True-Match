@@ -197,7 +197,8 @@ body::after {
   opacity: 0;
   transform: rotate(-45deg);
   animation-name: starShoot;
-  animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+  /* Constant speed the whole way (no easing). */
+  animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 /* Soft, tapered comet trail — brightest at the head, fading to the tail
@@ -220,24 +221,24 @@ body::after {
   filter: blur(1px);
 }
 @keyframes starShoot {
+  /* Start off-screen (bottom-left), travel at constant speed fully across and
+     off-screen (top-right). Because start & end are off the viewport (and the
+     container clips overflow), it's only ever seen mid-crossing — no visible
+     appear/stop and no lingering trail. */
   0% {
-    opacity: 0;
+    opacity: 1;
     transform: translate(0, 0) rotate(-45deg);
   }
-  1% {
+  6% {
     opacity: 1;
+    transform: translate(150vw, -150vh) rotate(-45deg);
   }
-  5% {
-    opacity: 1;
-    transform: translate(62vw, -62vh) rotate(-45deg);
-  }
-  6.5% {
+  6.01% {
     opacity: 0;
-    transform: translate(66vw, -66vh) rotate(-45deg);
   }
   100% {
     opacity: 0;
-    transform: translate(66vw, -66vh) rotate(-45deg);
+    transform: translate(150vw, -150vh) rotate(-45deg);
   }
 }
 

@@ -181,6 +181,7 @@ router.get(
         matchId: m.matchId,
         senderId: m.senderId,
         body: m.body,
+        isGift: m.isGift,
         createdAt: m.createdAt.toISOString(),
       })),
     });

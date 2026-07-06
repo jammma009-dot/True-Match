@@ -8,6 +8,7 @@ import { LogoHeader } from "../components/LogoHeader";
 import { FilterModal } from "../components/FilterModal";
 import { PremiumBadge } from "../components/PremiumBadge";
 import { PremiumModal } from "../components/PremiumModal";
+import { PresentModal } from "../components/PresentModal";
 import { LikeLimitModal } from "../components/LikeLimitModal";
 import { haptics } from "../lib/telegram";
 import { ReportBlockModal } from "../components/ReportBlockModal";
@@ -29,6 +30,8 @@ export function DiscoverScreen({
   const [showPremium, setShowPremium] = useState(false);
   const [limitHit, setLimitHit] = useState<number | null>(null);
   const [rewinding, setRewinding] = useState(false);
+  const [giftTarget, setGiftTarget] = useState<PublicProfile | null>(null);
+  const presentPrice = me?.settings?.presentPriceStars ?? 100;
   const [feedTab, setFeedTab] = useState<"foryou" | "nearby">("foryou");
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(80);
@@ -499,7 +502,7 @@ export function DiscoverScreen({
         onClick={doRewind}
         onPointerDown={(e) => e.stopPropagation()}
         disabled={rewinding}
-        className="absolute left-2 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-amber-300 shadow-lg backdrop-blur active:scale-90 disabled:opacity-50"
+        className="absolute left-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-amber-300 shadow-lg backdrop-blur active:scale-90 disabled:opacity-50"
       >
         <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
       </button>
@@ -519,9 +522,15 @@ export function DiscoverScreen({
         {/* Gift / super-like — disabled ("coming soon"), with shine + flip */}
         <button
           type="button"
-          disabled
+          aria-label="present"
           title={t("discover.gift")}
-          className="gift-shine flex h-12 w-12 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-amber-300 shadow-lg"
+          onClick={() => {
+            if (!current) return;
+            haptics.impact("light");
+            setGiftTarget(current);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="gift-shine flex h-12 w-12 flex-shrink-0 touch-manipulation items-center justify-center rounded-full bg-neutral-800 text-amber-300 shadow-lg active:scale-90"
         >
           <span className="gift-flip">
             <Gift className="h-5 w-5" />
@@ -562,6 +571,21 @@ export function DiscoverScreen({
             setShowFilter(false);
           }}
           onClose={() => setShowFilter(false)}
+        />
+      )}
+
+      {giftTarget && (
+        <PresentModal
+          targetUserId={giftTarget.userId}
+          targetName={giftTarget.name}
+          isGift
+          priceStars={presentPrice}
+          onPaid={() => {
+            setGiftTarget(null);
+            advance();
+            queryClient.invalidateQueries({ queryKey: ["matches"] });
+          }}
+          onClose={() => setGiftTarget(null)}
         />
       )}
 

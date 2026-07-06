@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gift, Zap, Star, X, Check } from "lucide-react";
+import { Gift, Zap, Star, X, Check, MessageCircle } from "lucide-react";
 import { useT } from "../store/useStore";
 import { api } from "../lib/api";
 import { haptics, openInvoice } from "../lib/telegram";
@@ -85,6 +85,12 @@ export function PresentModal({
 
         {/* What it does */}
         <div className="mt-5 space-y-3 rounded-2xl bg-[var(--tg-bg-color)] px-4 py-4">
+          {isGift && (
+            <Row
+              icon={<MessageCircle className="h-5 w-5 text-amber-400" />}
+              text={t("present.f.chat")}
+            />
+          )}
           <Row icon={<Zap className="h-5 w-5 text-amber-400" />} text={t("present.f.top")} />
           <Row icon={<Star className="h-5 w-5 text-amber-400" fill="currentColor" />} text={t("present.f.stack")} />
         </div>

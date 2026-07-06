@@ -69,6 +69,22 @@ router.post(
       return;
     }
 
+    // Can't gift to someone blocked (either direction).
+    if (targetUserId !== user.id) {
+      const block = await prisma.block.findFirst({
+        where: {
+          OR: [
+            { blockerId: user.id, blockedId: targetUserId },
+            { blockerId: targetUserId, blockedId: user.id },
+          ],
+        },
+      });
+      if (block) {
+        res.status(403).json({ error: "blocked" });
+        return;
+      }
+    }
+
     const settings = await getSettings();
     const stars = settings.presentPriceStars ?? DEFAULT_PRESENT_STARS;
     const isGift = targetUserId !== user.id;

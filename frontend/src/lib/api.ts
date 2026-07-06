@@ -111,6 +111,7 @@ export interface ChatMessage {
   matchId: string;
   senderId: string;
   body: string;
+  isGift?: boolean;
   createdAt: string;
 }
 

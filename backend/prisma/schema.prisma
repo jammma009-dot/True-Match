@@ -187,6 +187,8 @@ model Message {
   senderId  String
   sender    User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   body      String
+  // True for the special "sent you a gift" first message (rendered highlighted).
+  isGift    Boolean  @default(false)
   readAt    DateTime?
   createdAt DateTime @default(now())
 
