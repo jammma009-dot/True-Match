@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secrets & Telegram sessions — NEVER commit these
+.env
+*.session
+*.session-journal

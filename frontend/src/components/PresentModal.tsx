@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Gift, Zap, Star, X, Check, MessageCircle, CreditCard } from "lucide-react";
-import { useT } from "../store/useStore";
+import { useT, useStore } from "../store/useStore";
 import { api } from "../lib/api";
 import { haptics, openInvoice, openTelegramLink } from "../lib/telegram";
+import { CardPaymentPanel } from "./CardPaymentPanel";
 
 /**
  * "Present" / Boost sheet. Buying a present gives a 3-day boost (stay on top of
@@ -30,9 +31,11 @@ export function PresentModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const cardNumber = useStore((s) => s.me?.settings?.cardNumber ?? null);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState(false);
   const [done, setDone] = useState(false);
+  const [mode, setMode] = useState<"options" | "card">("options");
 
   const pay = async () => {
     if (paying) return;
@@ -100,7 +103,13 @@ export function PresentModal({
           <Row icon={<Star className="h-5 w-5 text-amber-400" fill="currentColor" />} text={t("present.f.stack")} />
         </div>
 
-        {done ? (
+        {mode === "card" ? (
+          <CardPaymentPanel
+            createOrder={() => api.createBoostCardOrder(targetUserId)}
+            onPaid={onPaid}
+            onBack={() => setMode("options")}
+          />
+        ) : done ? (
           <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500/15 py-4 text-sm font-semibold text-emerald-300">
             <Check className="h-4 w-4" /> {t("present.done")}
           </div>
@@ -127,13 +136,18 @@ export function PresentModal({
               )}
             </button>
 
-            {/* Pay via card — forward to responsible person */}
+            {/* Pay via card — automated order flow if a card is configured,
+                otherwise fall back to forwarding to the responsible person. */}
             <button
               type="button"
-              disabled={!paymentUsername}
+              disabled={!cardNumber && !paymentUsername}
               onClick={() => {
-                if (!paymentUsername) return;
                 haptics.impact("light");
+                if (cardNumber) {
+                  setMode("card");
+                  return;
+                }
+                if (!paymentUsername) return;
                 openTelegramLink(`https://t.me/${paymentUsername}`);
                 onClose();
               }}
@@ -144,7 +158,9 @@ export function PresentModal({
               </span>
               <span className="flex-1">
                 <span className="block font-semibold text-tg">{t("present.card")}</span>
-                <span className="block text-xs text-tg-hint">{t("present.cardHint")}</span>
+                <span className="block text-xs text-tg-hint">
+                  {cardNumber ? t("card.hintAuto") : t("present.cardHint")}
+                </span>
               </span>
             </button>
           </>

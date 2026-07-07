@@ -11,9 +11,10 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { useT } from "../store/useStore";
+import { useT, useStore } from "../store/useStore";
 import { api } from "../lib/api";
 import { haptics, openTelegramLink, openInvoice } from "../lib/telegram";
+import { CardPaymentPanel } from "./CardPaymentPanel";
 
 const FEATURES = [
   { icon: Heart, titleKey: "premium.f.likes.title", descKey: "premium.f.likes.desc" },
@@ -42,8 +43,10 @@ export function PremiumModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const cardNumber = useStore((s) => s.me?.settings?.cardNumber ?? null);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState(false);
+  const [mode, setMode] = useState<"options" | "card">("options");
 
   const payWithStars = async () => {
     if (paying) return;
@@ -96,78 +99,95 @@ export function PremiumModal({
           <p className="mt-1 text-sm text-tg-hint">{t("premium.subtitle")}</p>
         </div>
 
-        {/* Features */}
-        <div className="mt-5 rounded-2xl bg-[var(--tg-bg-color)] px-4">
-          {FEATURES.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <div
-                key={f.titleKey}
-                className={`flex items-start gap-3 py-3.5 ${
-                  i > 0 ? "border-t border-white/5" : ""
-                }`}
-              >
-                <Icon className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
-                <div>
-                  <p className="text-sm font-semibold text-tg">{t(f.titleKey)}</p>
-                  <p className="text-xs text-tg-hint">{t(f.descKey)}</p>
-                </div>
+        {mode === "card" ? (
+          <CardPaymentPanel
+            createOrder={api.createPremiumCardOrder}
+            onPaid={onPaid}
+            onBack={() => setMode("options")}
+          />
+        ) : (
+          <>
+            {/* Features */}
+            <div className="mt-5 rounded-2xl bg-[var(--tg-bg-color)] px-4">
+              {FEATURES.map((f, i) => {
+                const Icon = f.icon;
+                return (
+                  <div
+                    key={f.titleKey}
+                    className={`flex items-start gap-3 py-3.5 ${
+                      i > 0 ? "border-t border-white/5" : ""
+                    }`}
+                  >
+                    <Icon className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-tg">{t(f.titleKey)}</p>
+                      <p className="text-xs text-tg-hint">{t(f.descKey)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {isPremium && (
+              <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-amber-400/15 py-3 text-sm font-semibold text-amber-300">
+                <Check className="h-4 w-4" /> {t("premium.active")}
               </div>
-            );
-          })}
-        </div>
+            )}
 
-        {isPremium && (
-          <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-amber-400/15 py-3 text-sm font-semibold text-amber-300">
-            <Check className="h-4 w-4" /> {t("premium.active")}
-          </div>
+            {error && (
+              <p className="mt-3 text-center text-xs text-pass">{t("premium.error")}</p>
+            )}
+
+            {/* Pay with Telegram Stars — real invoice */}
+            <button
+              type="button"
+              disabled={paying}
+              onClick={payWithStars}
+              className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-4 text-left text-amber-950 active:opacity-90 disabled:opacity-60"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/15">
+                <Star className="h-5 w-5" fill="currentColor" />
+              </span>
+              <span className="flex-1">
+                <span className="block font-bold">{t("premium.stars")}</span>
+                <span className="block text-xs opacity-80">
+                  {paying ? t("premium.processing") : t("premium.starsPrice", { price: priceStars })}
+                </span>
+              </span>
+              <span className="flex items-center gap-0.5 font-extrabold">
+                {priceStars} <Star className="h-4 w-4" fill="currentColor" />
+              </span>
+            </button>
+
+            {/* Pay via card — automated order flow if a card is configured,
+                otherwise fall back to forwarding to the responsible person. */}
+            <button
+              type="button"
+              disabled={!cardNumber && !paymentUsername}
+              onClick={() => {
+                haptics.impact("light");
+                if (cardNumber) {
+                  setMode("card");
+                  return;
+                }
+                if (!paymentUsername) return;
+                openTelegramLink(`https://t.me/${paymentUsername}`);
+                onClose();
+              }}
+              className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-bg-color)] px-4 py-4 text-left active:opacity-80 disabled:opacity-50"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/20 text-brand">
+                <CreditCard className="h-5 w-5" />
+              </span>
+              <span className="flex-1">
+                <span className="block font-semibold text-tg">{t("premium.card")}</span>
+                <span className="block text-xs text-tg-hint">
+                  {cardNumber ? t("card.hintAuto") : t("premium.cardHint")}
+                </span>
+              </span>
+            </button>
+          </>
         )}
-
-        {error && (
-          <p className="mt-3 text-center text-xs text-pass">{t("premium.error")}</p>
-        )}
-
-        {/* Pay with Telegram Stars — real invoice */}
-        <button
-          type="button"
-          disabled={paying}
-          onClick={payWithStars}
-          className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-4 text-left text-amber-950 active:opacity-90 disabled:opacity-60"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/15">
-            <Star className="h-5 w-5" fill="currentColor" />
-          </span>
-          <span className="flex-1">
-            <span className="block font-bold">{t("premium.stars")}</span>
-            <span className="block text-xs opacity-80">
-              {paying ? t("premium.processing") : t("premium.starsPrice", { price: priceStars })}
-            </span>
-          </span>
-          <span className="flex items-center gap-0.5 font-extrabold">
-            {priceStars} <Star className="h-4 w-4" fill="currentColor" />
-          </span>
-        </button>
-
-        {/* Pay via card — forward to responsible person */}
-        <button
-          type="button"
-          disabled={!paymentUsername}
-          onClick={() => {
-            if (!paymentUsername) return;
-            haptics.impact("light");
-            openTelegramLink(`https://t.me/${paymentUsername}`);
-            onClose();
-          }}
-          className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-bg-color)] px-4 py-4 text-left active:opacity-80 disabled:opacity-50"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/20 text-brand">
-            <CreditCard className="h-5 w-5" />
-          </span>
-          <span className="flex-1">
-            <span className="block font-semibold text-tg">{t("premium.card")}</span>
-            <span className="block text-xs text-tg-hint">{t("premium.cardHint")}</span>
-          </span>
-        </button>
       </div>
     </div>
   );

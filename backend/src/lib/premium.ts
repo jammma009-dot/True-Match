@@ -60,6 +60,33 @@ export function isProfileComplete(
   );
 }
 
+// ---------- Card-to-card payments (CardXabar + userbot) ----------
+
+/** Default Premium price in so'm (UZS) for card payments if unset by the admin. */
+export const DEFAULT_PREMIUM_UZS = 20000;
+
+/** Default Present/Boost price in so'm (UZS) for card payments if unset. */
+export const DEFAULT_PRESENT_UZS = 10000;
+
+/** How long a card order stays open (minutes) before it expires unmatched. */
+export const CARD_ORDER_TTL_MIN = 30;
+
+/**
+ * Given a base price in so'm and a unique two-digit suffix (1..99 tiyin), build
+ * the exact transfer amount in tiyin. Example: 1000 so'm + 17 → 100017 tiyin
+ * (1000.17 UZS). The last two digits identify the specific order.
+ */
+export function buildAmountTiyin(baseUzs: number, uniqueCents: number): number {
+  return baseUzs * 100 + uniqueCents;
+}
+
+/** Format an amount in tiyin as a plain decimal string, e.g. 100017 → "1000.17". */
+export function formatTiyin(amountTiyin: number): string {
+  const som = Math.floor(amountTiyin / 100);
+  const tiyin = amountTiyin % 100;
+  return `${som}.${tiyin.toString().padStart(2, "0")}`;
+}
+
 // ---------- Present / Boost ----------
 
 /** Default Present (boost) price in Telegram Stars if the admin hasn't set one. */

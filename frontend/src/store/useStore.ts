@@ -53,6 +53,12 @@ export interface MeResponse {
     paymentUsername: string | null;
     premiumPriceStars?: number;
     presentPriceStars?: number;
+    // Automated card-to-card payment. When cardNumber is set, the "Pay via
+    // card" buttons open the in-app order flow (exact amount + auto-activation).
+    cardNumber?: string | null;
+    cardHolder?: string | null;
+    premiumPriceUzs?: number;
+    presentPriceUzs?: number;
   };
   reference: {
     cities: CityRef[];

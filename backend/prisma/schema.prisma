@@ -61,6 +61,21 @@ enum SwipeAction {
   pass
 }
 
+// What a card payment buys.
+enum CardOrderKind {
+  premium
+  boost // self-boost
+  gift // boost gifted to another user
+}
+
+// Lifecycle of a card payment order.
+enum CardOrderStatus {
+  pending // waiting for the transfer to arrive
+  paid // matched by the CardXabar userbot and entitlement granted
+  expired // transfer window elapsed with no match
+  cancelled
+}
+
 // Lifestyle frequency (smoking / drinking)
 enum Habit {
   never
@@ -113,6 +128,7 @@ model User {
   reportsAgainst  Report[]  @relation("Reported")
   blocksMade      Block[]   @relation("Blocker")
   blocksAgainst   Block[]   @relation("Blocked")
+  cardOrders      CardOrder[] @relation("CardOrderBuyer")
 }
 
 model Profile {
@@ -243,6 +259,39 @@ model Block {
   @@index([blockedId])
 }
 
+// A card-to-card payment order. The user is shown a card number and an EXACT
+// amount whose last two digits (tiyin) are unique per pending order. When the
+// CardXabar userbot reports an incoming transfer of that exact amount, we match
+// it to this order and grant the entitlement automatically — no bank
+// requisites or legal entity required.
+model CardOrder {
+  id           String          @id @default(cuid())
+  kind         CardOrderKind
+  // Buyer (the person paying / initiating).
+  userId       String
+  user         User            @relation("CardOrderBuyer", fields: [userId], references: [id], onDelete: Cascade)
+  // Who receives the entitlement. For premium/boost this equals userId; for a
+  // gift it's the recipient. Stored as a plain id (looked up manually).
+  targetUserId String
+  // Base price in tiyin (1 UZS = 100 tiyin), before the unique suffix.
+  baseTiyin    Int
+  // The unique last-two-digits (1..99) that distinguish this order.
+  uniqueCents  Int
+  // Exact amount to transfer, in tiyin: baseTiyin - (baseTiyin % 100) + uniqueCents.
+  // The CardXabar webhook matches on this exact integer.
+  amountTiyin  Int
+  status       CardOrderStatus @default(pending)
+  createdAt    DateTime        @default(now())
+  expiresAt    DateTime
+  paidAt       DateTime?
+  // Raw CardXabar text that matched this order (for auditing/debugging).
+  matchedRaw   String?
+
+  // Fast lookup of an incoming amount among still-open orders.
+  @@index([status, amountTiyin])
+  @@index([userId])
+}
+
 // App-wide settings, editable from the admin panel (single row, id=1).
 model Settings {
   id              Int      @id @default(1)
@@ -256,5 +305,20 @@ model Settings {
   // Telegram username OR numeric id of the person notified when someone buys
   // Premium with Stars (Stars are credited to the bot automatically).
   starRecipient   String?
+
+  // ----- Automated card-to-card payments (CardXabar + userbot) -----
+  // Card number shown to the user to transfer to (free text, e.g. "8600 .... 1498").
+  // When set, the "Pay via card" buttons switch to the automated order flow.
+  cardNumber        String?
+  // Optional cardholder name shown alongside the number.
+  cardHolder        String?
+  // Premium price in so'm (UZS) for card payments. Null → DEFAULT_PREMIUM_UZS.
+  premiumPriceUzs   Int?
+  // Present/Boost price in so'm (UZS) for card payments. Null → DEFAULT_PRESENT_UZS.
+  presentPriceUzs   Int?
+  // Shared secret the CardXabar userbot presents (X-Payment-Secret header) to
+  // authenticate to the webhook. Null → the webhook rejects all requests.
+  cardWebhookSecret String?
+
   updatedAt       DateTime @updatedAt
 }
