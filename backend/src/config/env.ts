@@ -60,4 +60,21 @@ export function assertRequiredEnv(): void {
         `The server will start but related features will not work.`,
     );
   }
+
+  // Loud warnings for insecure defaults in production.
+  if (isProd) {
+    if (!process.env.ADMIN_PASSWORD || env.ADMIN_PASSWORD === "changeme") {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[env] SECURITY: ADMIN_PASSWORD is unset or the default 'changeme'. " +
+          "Set a strong ADMIN_PASSWORD — the admin panel is exposed publicly.",
+      );
+    }
+    if (env.CORS_ORIGIN === "*") {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[env] CORS_ORIGIN is '*' (any origin). Set it to your Mini App URL in production.",
+      );
+    }
+  }
 }

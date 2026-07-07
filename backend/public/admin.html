@@ -185,10 +185,10 @@
             <div class="row"><strong>${escapeHtml(v.name)}</strong> <span class="meta">${v.age} y/o</span></div>
             <p class="meta" style="margin:8px 0 4px">Verification selfie (should hold two fingers):</p>
             <div class="photos">
-              <img src="${v.verificationPhotoUrl}" style="width:150px;height:200px" onerror="this.style.opacity=0.2"/>
+              <img src="${escapeHtml(v.verificationPhotoUrl || "")}" style="width:150px;height:200px" onerror="this.style.opacity=0.2"/>
             </div>
             <p class="meta" style="margin:8px 0 4px">Profile photos:</p>
-            <div class="photos">${v.photos.map(u => `<img src="${u}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="photos">${v.photos.map(u => `<img src="${escapeHtml(u)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
             <div class="actions">
               <button class="btn-approve" onclick="decideVerify('${v.userId}', true)">Verify ✓</button>
               <button class="btn-reject" onclick="decideVerify('${v.userId}', false)">Reject</button>
@@ -314,7 +314,7 @@
         el.innerHTML = profiles.map(p => `
           <div class="card">
             <div class="row"><strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span></div>
-            <div class="photos">${p.photos.map(u => `<img src="${u}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="photos">${p.photos.map(u => `<img src="${escapeHtml(u)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
             <div class="actions">
               <button class="btn-approve" onclick="approve('${p.userId}')">Approve</button>
               <button class="btn-reject" onclick="reject('${p.userId}')">Reject</button>
@@ -341,7 +341,7 @@
           <div class="card">
             <div class="row"><strong>${escapeHtml(r.reportedUser.name || "(no profile)")}</strong> <span class="tag">${escapeHtml(r.reason)}</span> ${r.reportedUser.isBanned ? '<span class="tag" style="background:#e74c3c">BANNED</span>' : ""}</div>
             ${r.note ? `<div class="meta">Note: ${escapeHtml(r.note)}</div>` : ""}
-            <div class="photos">${r.reportedUser.photos.map(u => `<img src="${u}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="photos">${r.reportedUser.photos.map(u => `<img src="${escapeHtml(u)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
             <div class="actions">
               <button class="btn-ban" onclick="ban('${r.reportedUser.userId}')">Ban user</button>
               <button class="btn-dismiss" onclick="dismiss('${r.id}')">Dismiss</button>
@@ -396,7 +396,7 @@
           ? `<span class="tag" style="background:#3a7bd5;color:#fff">🚀 BOOST${u.boostUntil ? " until " + u.boostUntil.slice(0, 10) : ""}</span>`
           : "";
         const photos = p && p.photos.length
-          ? `<div class="photos">${p.photos.map(url => `<img src="${url}" onerror="this.style.opacity=0.2"/>`).join("")}</div>`
+          ? `<div class="photos">${p.photos.map(url => `<img src="${escapeHtml(url)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>`
           : "";
         const info = p
           ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned} ${premiumTag} ${boostTag}`

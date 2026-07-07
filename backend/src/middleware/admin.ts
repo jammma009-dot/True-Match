@@ -1,5 +1,17 @@
 import { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import { env } from "../config/env";
+
+/**
+ * Timing-safe string compare (avoids leaking the password length/prefix via
+ * response-time differences).
+ */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
 
 /**
  * Minimal admin auth for the MVP: a shared password sent as a Bearer token in
@@ -21,7 +33,7 @@ export function requireAdmin(
     provided = headerPw;
   }
 
-  if (!provided || provided !== env.ADMIN_PASSWORD) {
+  if (!provided || !env.ADMIN_PASSWORD || !safeEqual(provided, env.ADMIN_PASSWORD)) {
     res.status(401).json({ error: "unauthorized" });
     return;
   }

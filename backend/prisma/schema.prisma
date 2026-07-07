@@ -198,6 +198,8 @@ model Swipe {
 
   @@unique([fromUserId, toUserId])
   @@index([toUserId, action])
+  // Speeds up the per-day free-like cap count (fromUserId + action + createdAt).
+  @@index([fromUserId, action, createdAt])
 }
 
 model Match {

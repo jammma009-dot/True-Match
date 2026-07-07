@@ -109,6 +109,8 @@ export function LikesScreen({
                 <img
                   src={p.photos[0].url}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className={`h-full w-full object-cover ${
                     isPremium ? "" : "scale-110 blur-xl"
                   }`}

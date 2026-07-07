@@ -2,7 +2,8 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
-import { createPresignedUpload, r2Enabled } from "../lib/r2";
+import { rateLimit } from "../lib/ratelimit";
+import { createPresignedUpload, r2Enabled, isAllowedPhotoUrl } from "../lib/r2";
 import { prisma } from "../lib/prisma";
 import { toOwnProfile } from "../utils/serialize";
 
@@ -30,6 +31,8 @@ const presignSchema = z.object({
 router.post(
   "/presign",
   requireAuth,
+  // Cap presign requests to curb R2/upload abuse (generous for real editing).
+  rateLimit("presign", 40, 300),
   validateBody(presignSchema),
   async (req: Request, res: Response) => {
     if (!r2Enabled()) {
@@ -68,6 +71,12 @@ router.put(
   async (req: Request, res: Response) => {
     const user = req.authUser!;
     const { photos } = req.body as z.infer<typeof setPhotosSchema>;
+
+    // Only accept photo URLs we actually issued (R2 bucket).
+    if (!photos.every((p) => isAllowedPhotoUrl(p.url))) {
+      res.status(400).json({ error: "invalid_photo_url" });
+      return;
+    }
 
     const profile = await prisma.profile.findUnique({
       where: { userId: user.id },

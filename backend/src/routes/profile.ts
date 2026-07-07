@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { isAdult, MIN_AGE } from "../utils/age";
+import { isAllowedPhotoUrl } from "../lib/r2";
 import { toOwnProfile } from "../utils/serialize";
 import { Gender, Intent, City, Habit } from "@prisma/client";
 import { CITY_VALUES } from "../utils/cities";
@@ -54,6 +55,12 @@ router.post(
       res
         .status(403)
         .json({ error: "underage", minAge: MIN_AGE });
+      return;
+    }
+
+    // Only accept photo URLs we actually issued (R2 bucket).
+    if (!data.photos.every((p) => isAllowedPhotoUrl(p.url))) {
+      res.status(400).json({ error: "invalid_photo_url" });
       return;
     }
 
@@ -193,6 +200,10 @@ router.post(
   async (req: Request, res: Response) => {
     const user = req.authUser!;
     const { key, url } = req.body as z.infer<typeof verifySchema>;
+    if (!isAllowedPhotoUrl(url)) {
+      res.status(400).json({ error: "invalid_photo_url" });
+      return;
+    }
     const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
     if (!profile) {
       res.status(404).json({ error: "profile_not_found" });
