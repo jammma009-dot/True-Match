@@ -12,6 +12,8 @@ import {
   DEFAULT_PREMIUM_STARS,
   isBoostActive,
   DEFAULT_PRESENT_STARS,
+  DEFAULT_PREMIUM_UZS,
+  DEFAULT_PRESENT_UZS,
 } from "../lib/premium";
 import { Language } from "@prisma/client";
 
@@ -54,6 +56,12 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       paymentUsername: settings.paymentUsername,
       premiumPriceStars: settings.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
       presentPriceStars: settings.presentPriceStars ?? DEFAULT_PRESENT_STARS,
+      // Automated card-to-card payment (CardXabar). `cardNumber` presence tells
+      // the client to use the in-app order flow instead of forwarding to a chat.
+      cardNumber: settings.cardNumber ?? null,
+      cardHolder: settings.cardHolder ?? null,
+      premiumPriceUzs: settings.premiumPriceUzs ?? DEFAULT_PREMIUM_UZS,
+      presentPriceUzs: settings.presentPriceUzs ?? DEFAULT_PRESENT_UZS,
     },
     user: {
       id: user.id,

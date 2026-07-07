@@ -125,6 +125,26 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/** Card payment order returned when the user chooses "Pay via card". */
+export interface CardOrder {
+  orderId: string;
+  amount: string; // exact amount to transfer, e.g. "1000.17"
+  amountTiyin: number;
+  status: "pending" | "paid" | "expired" | "cancelled";
+  expiresAt: string;
+  cardNumber: string;
+  cardHolder: string | null;
+}
+
+/** Lightweight status poll result for a card order. */
+export interface CardOrderStatus {
+  orderId: string;
+  amount: string;
+  amountTiyin: number;
+  status: "pending" | "paid" | "expired" | "cancelled";
+  expiresAt: string;
+}
+
 export const api = {
   getMe: () => request<MeResponse>("/api/me"),
 
@@ -211,6 +231,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ targetUserId }),
     }),
+
+  // ----- Automated card-to-card payments (CardXabar) -----
+  createPremiumCardOrder: () =>
+    request<CardOrder>("/api/payments/card/order", {
+      method: "POST",
+      body: JSON.stringify({ kind: "premium" }),
+    }),
+
+  createBoostCardOrder: (targetUserId: string) =>
+    request<CardOrder>("/api/payments/card/order", {
+      method: "POST",
+      body: JSON.stringify({ kind: "boost", targetUserId }),
+    }),
+
+  getCardOrder: (orderId: string) =>
+    request<CardOrderStatus>(`/api/payments/card/order/${orderId}`),
 
   markLikesSeen: () =>
     request<{ ok: true }>("/api/likes/seen", { method: "POST", body: "{}" }),

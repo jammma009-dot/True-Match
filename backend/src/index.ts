@@ -18,6 +18,7 @@ import likesRouter from "./routes/likes";
 import safetyRouter from "./routes/safety";
 import adminRouter from "./routes/admin";
 import premiumRouter from "./routes/premium";
+import paymentsRouter from "./routes/payments";
 
 // Make BigInt JSON-serialisable as a safety net (we avoid returning it, but
 // this prevents accidental 500s if one ever leaks into a response).
@@ -59,6 +60,7 @@ async function main(): Promise<void> {
   app.use("/api/matches", matchesRouter);
   app.use("/api/likes", likesRouter);
   app.use("/api/premium", premiumRouter);
+  app.use("/api/payments", paymentsRouter);
   app.use("/api", safetyRouter); // /api/report, /api/block, /api/unblock
   app.use("/api/admin", adminRouter);
 

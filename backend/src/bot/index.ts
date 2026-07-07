@@ -2,8 +2,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { t, Locale, normalizeLocale } from "../lib/locale";
-import { PREMIUM_DAYS, BOOST_DAYS, stackedBoostUntil } from "../lib/premium";
-import { createMatchAndCelebrate } from "../services/match";
+import { grantPremium, grantBoost } from "../services/entitlements";
 
 /**
  * grammy bot instance. Handles the pre-Mini-App /start flow:
@@ -139,7 +138,9 @@ async function notifyStarRecipient(text: string): Promise<void> {
   }
 }
 
-// On successful payment, apply Premium or a Boost (present).
+// On successful payment, apply Premium or a Boost (present). The actual DB
+// changes + notifications live in services/entitlements so the card-payment
+// path (CardXabar webhook) behaves identically.
 bot.on("message:successful_payment", async (ctx) => {
   const payment = ctx.message.successful_payment;
   const payload = payment?.invoice_payload ?? "";
@@ -148,22 +149,13 @@ bot.on("message:successful_payment", async (ctx) => {
   const premiumMatch = /^premium:(.+)$/.exec(payload);
   if (premiumMatch) {
     const userId = premiumMatch[1];
-    const until = new Date(Date.now() + PREMIUM_DAYS * 86_400_000);
     try {
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: { premiumUntil: until },
-      });
-      const locale = user.language as Locale;
-      await ctx
-        .reply(`*${t(locale, "bot.premium.title")}*\n\n${t(locale, "bot.premium.body")}`, {
-          parse_mode: "Markdown",
-          reply_markup: openAppKeyboard(locale),
-        })
-        .catch(() => undefined);
-      await notifyStarRecipient(
-        `New Premium purchase: ${payment.total_amount} ⭐ (user ${userId}).`,
-      );
+      const until = await grantPremium(userId);
+      if (until) {
+        await notifyStarRecipient(
+          `New Premium purchase: ${payment.total_amount} ⭐ (user ${userId}).`,
+        );
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[bot] failed to activate premium:", err);
@@ -178,48 +170,12 @@ bot.on("message:successful_payment", async (ctx) => {
     const buyerUserId = boostMatch[2];
     const isGift = targetUserId !== buyerUserId;
     try {
-      const target = await prisma.user.findUnique({ where: { id: targetUserId } });
-      if (!target) return;
-      // Stack the boost on top of any remaining time.
-      const boostUntil = stackedBoostUntil(target.boostUntil, BOOST_DAYS);
-      await prisma.user.update({
-        where: { id: targetUserId },
-        data: { boostUntil },
-      });
-
-      // Thank the buyer.
-      const buyer = await prisma.user.findUnique({ where: { id: buyerUserId } });
-      if (buyer) {
-        const bl = buyer.language as Locale;
-        const key = isGift ? "bot.present.sent" : "bot.boost.body";
-        await ctx
-          .reply(`*${t(bl, "bot.boost.title")}*\n\n${t(bl, key)}`, {
-            parse_mode: "Markdown",
-            reply_markup: openAppKeyboard(bl),
-          })
-          .catch(() => undefined);
+      const ok = await grantBoost(targetUserId, buyerUserId);
+      if (ok) {
+        await notifyStarRecipient(
+          `New ${isGift ? "Present (gift)" : "Boost"} purchase: ${payment.total_amount} ⭐ (buyer ${buyerUserId} → ${targetUserId}).`,
+        );
       }
-
-      // If it's a gift, open a chat with a highlighted "sent you a gift" first
-      // message (no need to wait for a like back), and notify the recipient.
-      if (isGift) {
-        await createMatchAndCelebrate(buyerUserId, targetUserId, {
-          gift: { fromUserId: buyerUserId },
-        }).catch(() => undefined);
-
-        const tl = target.language as Locale;
-        await bot.api
-          .sendMessage(
-            Number(target.telegramId),
-            `*${t(tl, "bot.present.title")}*\n\n${t(tl, "bot.present.body")}`,
-            { parse_mode: "Markdown", reply_markup: openAppKeyboard(tl) },
-          )
-          .catch(() => undefined);
-      }
-
-      await notifyStarRecipient(
-        `New ${isGift ? "Present (gift)" : "Boost"} purchase: ${payment.total_amount} ⭐ (buyer ${buyerUserId} → ${targetUserId}).`,
-      );
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[bot] failed to apply boost:", err);

@@ -13,6 +13,8 @@ import {
   isPremiumActive,
   DEFAULT_PRESENT_STARS,
   isBoostActive,
+  DEFAULT_PREMIUM_UZS,
+  DEFAULT_PRESENT_UZS,
 } from "../lib/premium";
 import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
 
@@ -33,6 +35,11 @@ router.get("/settings", async (_req: Request, res: Response) => {
     premiumPriceStars: s.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
     presentPriceStars: s.presentPriceStars ?? DEFAULT_PRESENT_STARS,
     starRecipient: s.starRecipient,
+    cardNumber: s.cardNumber,
+    cardHolder: s.cardHolder,
+    premiumPriceUzs: s.premiumPriceUzs ?? DEFAULT_PREMIUM_UZS,
+    presentPriceUzs: s.presentPriceUzs ?? DEFAULT_PRESENT_UZS,
+    cardWebhookSecret: s.cardWebhookSecret,
   });
 });
 
@@ -42,6 +49,12 @@ const settingsSchema = z.object({
   premiumPriceStars: z.coerce.number().int().min(1).max(100000).optional(),
   presentPriceStars: z.coerce.number().int().min(1).max(100000).optional(),
   starRecipient: z.string().trim().max(64).optional(),
+  // Automated card-to-card payment settings.
+  cardNumber: z.string().trim().max(64).optional(),
+  cardHolder: z.string().trim().max(120).optional(),
+  premiumPriceUzs: z.coerce.number().int().min(1).max(100_000_000).optional(),
+  presentPriceUzs: z.coerce.number().int().min(1).max(100_000_000).optional(),
+  cardWebhookSecret: z.string().trim().max(200).optional(),
 });
 router.post(
   "/settings",
@@ -50,12 +63,19 @@ router.post(
     const data = req.body as z.infer<typeof settingsSchema>;
     // Strip a leading @ if the admin includes it.
     const clean = (v?: string) => (v ? v.replace(/^@/, "").trim() || null : null);
+    // Free-text (no @ stripping): trim, empty → null.
+    const text = (v?: string) => (v != null && v.trim() !== "" ? v.trim() : null);
     const common = {
       contactUsername: clean(data.contactUsername),
       paymentUsername: clean(data.paymentUsername),
       premiumPriceStars: data.premiumPriceStars ?? null,
       presentPriceStars: data.presentPriceStars ?? null,
       starRecipient: clean(data.starRecipient),
+      cardNumber: text(data.cardNumber),
+      cardHolder: text(data.cardHolder),
+      premiumPriceUzs: data.premiumPriceUzs ?? null,
+      presentPriceUzs: data.presentPriceUzs ?? null,
+      cardWebhookSecret: text(data.cardWebhookSecret),
     };
     const s = await prisma.settings.upsert({
       where: { id: 1 },
@@ -69,6 +89,11 @@ router.post(
       premiumPriceStars: s.premiumPriceStars ?? DEFAULT_PREMIUM_STARS,
       presentPriceStars: s.presentPriceStars ?? DEFAULT_PRESENT_STARS,
       starRecipient: s.starRecipient,
+      cardNumber: s.cardNumber,
+      cardHolder: s.cardHolder,
+      premiumPriceUzs: s.premiumPriceUzs ?? DEFAULT_PREMIUM_UZS,
+      presentPriceUzs: s.presentPriceUzs ?? DEFAULT_PRESENT_UZS,
+      cardWebhookSecret: s.cardWebhookSecret,
     });
   },
 );

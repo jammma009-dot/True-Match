@@ -231,6 +231,28 @@
             <label>Purchase notification ID — Telegram numeric ID that gets a "someone bought Premium" message (optional; does NOT receive the Stars)</label>
             <input id="set-recipient" type="text" placeholder="e.g. 123456789 (numeric id) — notification only" value="${escapeHtml(s.starRecipient || "")}" />
 
+            <h2 style="margin:22px 0 0">Card payment (automatic — CardXabar)</h2>
+            <p class="meta">
+              Money paid <b>directly to your card</b>. When set, the app's "Pay via card" buttons
+              show this card number and an <b>exact amount</b> (with unique tiyin, e.g. 1000.<b>17</b>).
+              The CardXabar userbot (running on <b>your</b> server/PC — NOT Railway) detects the transfer
+              and activates Premium/Boost automatically. Leave the card number empty to keep the old
+              "forward to a person" behavior.
+            </p>
+            <label>Card number (shown to users to transfer to)</label>
+            <input id="set-card-number" type="text" placeholder="e.g. 8600 1234 5678 1498" value="${escapeHtml(s.cardNumber || "")}" />
+            <label>Card holder name (optional, shown next to the number)</label>
+            <input id="set-card-holder" type="text" placeholder="e.g. FIRSTNAME LASTNAME" value="${escapeHtml(s.cardHolder || "")}" />
+            <label>Premium price (so'm / UZS) — for card payments</label>
+            <input id="set-premium-uzs" type="number" min="1" step="1" placeholder="e.g. 20000" value="${s.premiumPriceUzs ?? ""}" />
+            <label>Present / Boost price (so'm / UZS) — for card payments</label>
+            <input id="set-present-uzs" type="number" min="1" step="1" placeholder="e.g. 10000" value="${s.presentPriceUzs ?? ""}" />
+            <label>Webhook secret — the userbot sends this in the <code>X-Payment-Secret</code> header. Keep it private.</label>
+            <div class="row" style="gap:8px">
+              <input id="set-card-secret" type="text" placeholder="long random string" value="${escapeHtml(s.cardWebhookSecret || "")}" style="flex:1" />
+              <button type="button" onclick="genCardSecret()">Generate</button>
+            </div>
+
             <div class="actions" style="margin-top:16px">
               <button class="primary" onclick="saveSettings()">Save settings</button>
             </div>
@@ -238,16 +260,31 @@
           </div>`;
       }
 
+      function genCardSecret() {
+        // 32-byte random hex string, generated client-side.
+        const bytes = new Uint8Array(32);
+        (window.crypto || {}).getRandomValues?.(bytes);
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+        document.getElementById("set-card-secret").value = hex;
+      }
+
       async function saveSettings() {
         const priceRaw = document.getElementById("set-price").value.trim();
         const presentPriceRaw = document.getElementById("set-present-price").value.trim();
+        const premiumUzsRaw = document.getElementById("set-premium-uzs").value.trim();
+        const presentUzsRaw = document.getElementById("set-present-uzs").value.trim();
         const body = {
           contactUsername: document.getElementById("set-contact").value.trim(),
           paymentUsername: document.getElementById("set-payment").value.trim(),
           starRecipient: document.getElementById("set-recipient").value.trim(),
+          cardNumber: document.getElementById("set-card-number").value.trim(),
+          cardHolder: document.getElementById("set-card-holder").value.trim(),
+          cardWebhookSecret: document.getElementById("set-card-secret").value.trim(),
         };
         if (priceRaw) body.premiumPriceStars = Number(priceRaw);
         if (presentPriceRaw) body.presentPriceStars = Number(presentPriceRaw);
+        if (premiumUzsRaw) body.premiumPriceUzs = Number(premiumUzsRaw);
+        if (presentUzsRaw) body.presentPriceUzs = Number(presentUzsRaw);
         const res = await api("/api/admin/settings", { method: "POST", body: JSON.stringify(body) });
         const msg = document.getElementById("settings-msg");
         if (res.ok) {
@@ -258,6 +295,11 @@
           document.getElementById("set-price").value = res.premiumPriceStars ?? "";
           document.getElementById("set-present-price").value = res.presentPriceStars ?? "";
           document.getElementById("set-recipient").value = res.starRecipient || "";
+          document.getElementById("set-card-number").value = res.cardNumber || "";
+          document.getElementById("set-card-holder").value = res.cardHolder || "";
+          document.getElementById("set-premium-uzs").value = res.premiumPriceUzs ?? "";
+          document.getElementById("set-present-uzs").value = res.presentPriceUzs ?? "";
+          document.getElementById("set-card-secret").value = res.cardWebhookSecret || "";
         } else {
           msg.style.color = "#e74c3c";
           msg.textContent = "Error: " + (res.error || "failed");
