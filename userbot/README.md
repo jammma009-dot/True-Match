@@ -16,14 +16,41 @@ Customer pays exact amount ──► Bank ──► CardXabar bot (Telegram)
                                    True Match backend ──► activates entitlement
 ```
 
-## ⚠️ Do NOT run this on Railway
+## ⚠️ Where to run it (not on your app's Railway account)
 
-Railway (and most PaaS hosts) forbid Telegram **userbots** (self-accounts). Run
-it on a machine you control: a cheap VPS (Hetzner, Contabo), a free Oracle Cloud
-instance, a Raspberry Pi, or even a home PC that stays on.
+Railway's fair-use policy bans Telegram **userbots** (self-accounts), and a
+violation can suspend the whole account. Since your backend + database live on
+your main Railway account, do **not** run the userbot there.
 
-Only this userbot must live off-Railway. The backend, bot and Mini App stay on
-Railway/Vercel as before.
+Good places to run it:
+- A **separate** Railway account (different login) — isolates the ban risk from
+  your production app. This works well; deploy this folder as its own service
+  and set the env vars below (use a `TG_SESSION_STRING` since Railway has no
+  interactive terminal for the login code).
+- Your own **VPS** (Hetzner, Contabo, Oracle Cloud Always Free) or a home PC/
+  Raspberry Pi that stays on.
+
+Only this userbot needs a separate home. The backend, bot and Mini App stay on
+your main Railway/Vercel setup as before.
+
+### Generating a session string (for headless hosts)
+
+On a host with no interactive terminal (like Railway), generate the session
+string once — locally or in a browser via **Google Colab**:
+
+```python
+!pip install -q telethon
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+api_id = int(input("api_id: ")); api_hash = input("api_hash: ")
+client = TelegramClient(StringSession(), api_id, api_hash)
+await client.start()          # asks for phone + login code
+print(client.session.save())  # <-- copy this into TG_SESSION_STRING
+```
+
+> Then **fully stop** that generator session (in Colab: *Runtime → Disconnect
+> and delete runtime*). If the same session stays connected in two places,
+> Telegram routes updates to only one and the deployed bot will receive nothing.
 
 ## How payment matching works
 
