@@ -25,6 +25,7 @@ export function MatchProfileView({
   const t = useT();
   const queryClient = useQueryClient();
   const presentPrice = useStore((s) => s.me?.settings?.presentPriceStars) ?? 100;
+  const paymentUsername = useStore((s) => s.me?.settings?.paymentUsername) ?? null;
   const [photoIdx, setPhotoIdx] = useState(0);
   const [showPresent, setShowPresent] = useState(false);
 
@@ -201,6 +202,7 @@ export function MatchProfileView({
               targetName={p.name}
               isGift
               priceStars={presentPrice}
+              paymentUsername={paymentUsername}
               onPaid={() => {
                 queryClient.invalidateQueries({ queryKey: ["matchProfile", matchId] });
               }}

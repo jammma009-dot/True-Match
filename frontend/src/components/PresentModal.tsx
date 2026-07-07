@@ -1,19 +1,23 @@
 import { useState } from "react";
-import { Gift, Zap, Star, X, Check, MessageCircle } from "lucide-react";
+import { Gift, Zap, Star, X, Check, MessageCircle, CreditCard } from "lucide-react";
 import { useT } from "../store/useStore";
 import { api } from "../lib/api";
-import { haptics, openInvoice } from "../lib/telegram";
+import { haptics, openInvoice, openTelegramLink } from "../lib/telegram";
 
 /**
  * "Present" / Boost sheet. Buying a present gives a 3-day boost (stay on top of
  * the feed). `targetUserId` is the buyer for a self-boost, or another user to
  * gift the boost to. Boosts STACK (each purchase adds 3 more days).
+ *
+ * Payment can be made with Telegram Stars (real invoice) or via card (the user
+ * is forwarded to the responsible person's Telegram).
  */
 export function PresentModal({
   targetUserId,
   targetName,
   isGift = false,
   priceStars,
+  paymentUsername,
   onPaid,
   onClose,
 }: {
@@ -21,6 +25,7 @@ export function PresentModal({
   targetName?: string;
   isGift?: boolean;
   priceStars: number;
+  paymentUsername?: string | null;
   onPaid?: () => void;
   onClose: () => void;
 }) {
@@ -120,6 +125,27 @@ export function PresentModal({
                   </span>
                 </>
               )}
+            </button>
+
+            {/* Pay via card — forward to responsible person */}
+            <button
+              type="button"
+              disabled={!paymentUsername}
+              onClick={() => {
+                if (!paymentUsername) return;
+                haptics.impact("light");
+                openTelegramLink(`https://t.me/${paymentUsername}`);
+                onClose();
+              }}
+              className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-[var(--tg-bg-color)] px-4 py-4 text-left active:opacity-80 disabled:opacity-50"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/20 text-brand">
+                <CreditCard className="h-5 w-5" />
+              </span>
+              <span className="flex-1">
+                <span className="block font-semibold text-tg">{t("present.card")}</span>
+                <span className="block text-xs text-tg-hint">{t("present.cardHint")}</span>
+              </span>
             </button>
           </>
         )}
