@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import compression from "compression";
 import { createServer } from "http";
 import path from "path";
 import { webhookCallback } from "grammy";
@@ -39,8 +38,6 @@ async function main(): Promise<void> {
 
   // Baseline security headers on every response.
   app.use(securityHeaders);
-  // Gzip responses (JSON payloads) for faster transfers.
-  app.use(compression());
 
   app.use(
     cors({
