@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import { createServer } from "http";
 import path from "path";
 import { webhookCallback } from "grammy";
 
 import { env, assertRequiredEnv, isProd } from "./config/env";
+import { securityHeaders } from "./middleware/security";
 import { bot } from "./bot";
 import { initSocket } from "./socket";
 
@@ -32,6 +34,13 @@ async function main(): Promise<void> {
 
   const app = express();
   app.set("trust proxy", true);
+  // Don't advertise the framework/version.
+  app.disable("x-powered-by");
+
+  // Baseline security headers on every response.
+  app.use(securityHeaders);
+  // Gzip responses (JSON payloads) for faster transfers.
+  app.use(compression());
 
   app.use(
     cors({

@@ -17,6 +17,23 @@ const r2Configured = Boolean(
 
 export const r2Enabled = (): boolean => r2Configured;
 
+/**
+ * Whether a photo/verification URL is one we actually issued (i.e. lives under
+ * our R2 public base). The client sends back the `url` from a presign response,
+ * but nothing stops a malicious client from sending an arbitrary URL — which
+ * would then be rendered in other users' feeds and the admin panel. Restricting
+ * to our own bucket closes that (a source of stored-XSS / content injection).
+ *
+ * When no public base is configured (local dev), we only require a plain https
+ * URL so the flow still works.
+ */
+export function isAllowedPhotoUrl(url: string): boolean {
+  if (typeof url !== "string" || url.length > 2048) return false;
+  const base = env.R2_PUBLIC_BASE_URL.replace(/\/$/, "");
+  if (!base) return /^https:\/\/[^\s"'<>]+$/i.test(url);
+  return url.startsWith(base + "/") && !/[\s"'<>]/.test(url);
+}
+
 const s3 = r2Configured
   ? new S3Client({
       region: "auto",

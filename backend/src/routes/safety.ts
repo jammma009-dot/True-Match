@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
+import { rateLimit } from "../lib/ratelimit";
 
 const router = Router();
 
@@ -19,6 +20,8 @@ const reportSchema = z.object({
 router.post(
   "/report",
   requireAuth,
+  // Anti-spam: at most 20 reports per hour per user.
+  rateLimit("report", 20, 3600),
   validateBody(reportSchema),
   async (req: Request, res: Response) => {
     const user = req.authUser!;

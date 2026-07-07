@@ -10,5 +10,15 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    // Split large, rarely-changing vendor libs into their own chunks so they
+    // cache independently of app code and load in parallel (faster repeat loads).
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "data-vendor": ["@tanstack/react-query", "zustand", "socket.io-client"],
+        },
+      },
+    },
   },
 });

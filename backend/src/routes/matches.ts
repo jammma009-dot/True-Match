@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
+import { rateLimit } from "../lib/ratelimit";
 import { computeAge } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { toPublicProfile } from "../utils/serialize";
@@ -29,56 +30,82 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     orderBy: { createdAt: "desc" },
   });
 
-  const result = await Promise.all(
-    matches.map(async (m) => {
-      const otherId = m.userAId === user.id ? m.userBId : m.userAId;
-      const other = await prisma.user.findUnique({
-        where: { id: otherId },
-        include: { profile: { include: { photos: true } } },
-      });
-      const lastMessage = await prisma.message.findFirst({
-        where: { matchId: m.id },
-        orderBy: { createdAt: "desc" },
-      });
-      const unread = await prisma.message.count({
-        where: { matchId: m.id, senderId: { not: user.id }, readAt: null },
-      });
+  if (matches.length === 0) {
+    res.json({ matches: [] });
+    return;
+  }
 
-      const profile = other?.profile;
-      const firstPhoto = profile?.photos.sort(
-        (a, b) => a.position - b.position,
-      )[0];
-
-      return {
-        matchId: m.id,
-        createdAt: m.createdAt.toISOString(),
-        user: profile
-          ? {
-              userId: otherId,
-              name: profile.name,
-              age: computeAge(profile.birthdate),
-              city: profile.city,
-              cityLabel: cityLabel(profile.city),
-              photo: firstPhoto?.url ?? null,
-              // Premium status is public so premium users stand out everywhere.
-              isPremium: isPremiumActive(other?.premiumUntil ?? null),
-              verified: profile.verificationStatus === "verified",
-              // Only exposed to Premium requesters (and only if they have one).
-              telegramUsername: requesterPremium ? other?.username ?? null : null,
-            }
-          : null,
-        lastMessage: lastMessage
-          ? {
-              body: lastMessage.body,
-              senderId: lastMessage.senderId,
-              createdAt: lastMessage.createdAt.toISOString(),
-            }
-          : null,
-        unread,
-        seen: m.userAId === user.id ? m.seenA : m.seenB,
-      };
-    }),
+  const matchIds = matches.map((m) => m.id);
+  const otherIds = matches.map((m) =>
+    m.userAId === user.id ? m.userBId : m.userAId,
   );
+
+  // Batched lookups (avoids the previous N+1 of 3 queries per match):
+  //   1. all matched users + profiles + photos
+  //   2. the latest message per match (DISTINCT ON via Prisma `distinct`)
+  //   3. unread counts per match (single grouped query)
+  const [others, lastMessages, unreadGroups] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: otherIds } },
+      include: { profile: { include: { photos: true } } },
+    }),
+    prisma.message.findMany({
+      where: { matchId: { in: matchIds } },
+      orderBy: [{ matchId: "asc" }, { createdAt: "desc" }],
+      distinct: ["matchId"],
+    }),
+    prisma.message.groupBy({
+      by: ["matchId"],
+      where: { matchId: { in: matchIds }, senderId: { not: user.id }, readAt: null },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const otherById = new Map(others.map((o) => [o.id, o] as const));
+  const lastByMatch = new Map(lastMessages.map((m) => [m.matchId, m] as const));
+  const unreadByMatch = new Map(
+    unreadGroups.map((g) => [g.matchId, g._count._all] as const),
+  );
+
+  const result = matches.map((m) => {
+    const otherId = m.userAId === user.id ? m.userBId : m.userAId;
+    const other = otherById.get(otherId);
+    const profile = other?.profile;
+    const firstPhoto = profile?.photos
+      .slice()
+      .sort((a, b) => a.position - b.position)[0];
+    const lastMessage = lastByMatch.get(m.id);
+    const unread = unreadByMatch.get(m.id) ?? 0;
+
+    return {
+      matchId: m.id,
+      createdAt: m.createdAt.toISOString(),
+      user: profile
+        ? {
+            userId: otherId,
+            name: profile.name,
+            age: computeAge(profile.birthdate),
+            city: profile.city,
+            cityLabel: cityLabel(profile.city),
+            photo: firstPhoto?.url ?? null,
+            // Premium status is public so premium users stand out everywhere.
+            isPremium: isPremiumActive(other?.premiumUntil ?? null),
+            verified: profile.verificationStatus === "verified",
+            // Only exposed to Premium requesters (and only if they have one).
+            telegramUsername: requesterPremium ? other?.username ?? null : null,
+          }
+        : null,
+      lastMessage: lastMessage
+        ? {
+            body: lastMessage.body,
+            senderId: lastMessage.senderId,
+            createdAt: lastMessage.createdAt.toISOString(),
+          }
+        : null,
+      unread,
+      seen: m.userAId === user.id ? m.seenA : m.seenB,
+    };
+  });
 
   res.json({ matches: result });
 });
@@ -198,6 +225,8 @@ const sendSchema = z.object({ body: z.string().min(1).max(2000) });
 router.post(
   "/:matchId/messages",
   requireAuth,
+  // Anti-spam on the REST send fallback (socket path handles normal chatting).
+  rateLimit("msg_rest", 60, 60),
   validateBody(sendSchema),
   async (req: Request, res: Response) => {
     const user = req.authUser!;

@@ -56,7 +56,7 @@ export function MatchesScreen({
                 }`}
               >
                 {m.user?.photo ? (
-                  <img src={m.user.photo} alt="" className="h-full w-full object-cover" />
+                  <img src={m.user.photo} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-2xl">👤</div>
                 )}

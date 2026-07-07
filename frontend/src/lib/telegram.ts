@@ -91,7 +91,7 @@ export function openTelegramLink(url: string): void {
   } catch {
     /* ignore */
   }
-  window.open(url, "_blank");
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /**
@@ -113,7 +113,7 @@ export function openInvoice(
       /* ignore */
     }
     // Not inside Telegram — open the link so the flow isn't a dead end.
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     resolve("unsupported");
   });
 }
