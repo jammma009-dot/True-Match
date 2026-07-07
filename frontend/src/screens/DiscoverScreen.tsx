@@ -629,6 +629,7 @@ export function DiscoverScreen({
           targetName={giftTarget.name}
           isGift
           priceStars={presentPrice}
+          paymentUsername={paymentUsername}
           onPaid={() => {
             setGiftTarget(null);
             advance();

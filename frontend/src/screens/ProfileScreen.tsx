@@ -271,6 +271,7 @@ export function ProfileScreen() {
           targetUserId={myUserId}
           isGift={false}
           priceStars={presentPrice}
+          paymentUsername={paymentUsername}
           onPaid={() => {
             queryClient.invalidateQueries({ queryKey: ["me"] });
             window.setTimeout(

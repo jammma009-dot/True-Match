@@ -159,6 +159,8 @@
   "present.f.chat": "U bilan darhol chat ochiladi va sovg'a xabari yuboriladi",
   "present.buyCta": "Boost olish",
   "present.sendCta": "Sovg'a yuborish",
+  "present.card": "Karta orqali to'lash",
+  "present.cardHint": "Mas'ul shaxsga yo'naltiramiz",
   "present.processing": "Bajarilmoqda...",
   "present.done": "Tayyor! Boost faollashtirildi 🚀",
   "present.error": "To'lovni amalga oshirib bo'lmadi. Qayta urinib ko'ring.",
