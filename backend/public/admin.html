@@ -60,6 +60,7 @@
           <button id="tab-reports" onclick="showTab('reports')">Reports</button>
           <button id="tab-users" onclick="showTab('users')">All users</button>
           <button id="tab-verifications" onclick="showTab('verifications')">Verifications</button>
+          <button id="tab-cardorders" onclick="showTab('cardorders')">Card orders</button>
           <button id="tab-settings" onclick="showTab('settings')">Settings</button>
         </div>
         <div style="margin-left:auto; display:flex; gap:8px;">
@@ -73,6 +74,7 @@
         <div id="reports" style="display:none"></div>
         <div id="users" style="display:none"></div>
         <div id="verifications" style="display:none"></div>
+        <div id="cardorders" style="display:none"></div>
         <div id="settings" style="display:none"></div>
       </main>
     </div>
@@ -157,7 +159,7 @@
         document.getElementById("login").style.display = "block";
       }
 
-      const TABS = ["pending", "reports", "users", "verifications", "settings"];
+      const TABS = ["pending", "reports", "users", "verifications", "cardorders", "settings"];
       function showTab(tab) {
         TABS.forEach((t) => {
           document.getElementById(t).style.display = t === tab ? "block" : "none";
@@ -167,7 +169,57 @@
         else if (tab === "reports") loadReports();
         else if (tab === "settings") loadSettings();
         else if (tab === "verifications") loadVerifications();
+        else if (tab === "cardorders") loadCardOrders();
         else loadUsers();
+      }
+
+      // ---------- Card orders tab ----------
+      let cardOrderStatus = "";
+      async function loadCardOrders() {
+        const el = document.getElementById("cardorders");
+        el.innerHTML = "Loading...";
+        const q = cardOrderStatus ? ("?status=" + encodeURIComponent(cardOrderStatus)) : "";
+        const data = await api("/api/admin/card-orders" + q);
+        const c = (data.summary && data.summary.counts) || {};
+        const kindLabel = { premium: "Premium", boost: "Boost", gift: "Gift" };
+        const fmt = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "—");
+        const filterBar = `
+          <div class="searchbar">
+            <select id="cardOrderStatusSel" onchange="cardOrderStatus=this.value;loadCardOrders()">
+              <option value="">All statuses</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="expired">Expired</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="card">
+            <div class="row">
+              <span class="tag badge-approved">Paid: ${c.paid || 0}</span>
+              <span class="tag badge-pending">Pending: ${c.pending || 0}</span>
+              <span class="tag">Expired: ${c.expired || 0}</span>
+              <span class="meta" style="margin-left:auto">Total received: <strong style="color:#2ecc71">${escapeHtml(String(data.summary.totalReceived))} so'm</strong></span>
+            </div>
+          </div>`;
+        const body = data.orders.length
+          ? data.orders.map((o) => {
+              const sc = o.status === "paid" ? "badge-approved" : o.status === "pending" ? "badge-pending" : "badge-rejected";
+              const gift = o.recipientName ? ` → 🎁 ${escapeHtml(o.recipientName)}` : "";
+              return `
+                <div class="card">
+                  <div class="row">
+                    <strong>${escapeHtml(o.amount)} so'm</strong>
+                    <span class="tag">${escapeHtml(kindLabel[o.kind] || o.kind)}</span>
+                    <span class="tag ${sc}">${escapeHtml(o.status)}</span>
+                  </div>
+                  <div class="meta" style="margin-top:6px">👤 ${escapeHtml(o.buyerName || "(no name)")}${gift}</div>
+                  <div class="meta" style="margin-top:2px">Created ${fmt(o.createdAt)}${o.paidAt ? " · Paid " + fmt(o.paidAt) : ""}</div>
+                </div>`;
+            }).join("")
+          : '<div class="empty">No card orders yet</div>';
+        el.innerHTML = filterBar + body;
+        const sel = document.getElementById("cardOrderStatusSel");
+        if (sel) sel.value = cardOrderStatus;
       }
 
       // ---------- Verifications tab ----------
