@@ -15,8 +15,16 @@ import {
   isBoostActive,
   DEFAULT_PREMIUM_UZS,
   DEFAULT_PRESENT_UZS,
+  formatTiyin,
 } from "../lib/premium";
-import { Gender, Intent, City, ProfileStatus, Prisma } from "@prisma/client";
+import {
+  Gender,
+  Intent,
+  City,
+  ProfileStatus,
+  CardOrderStatus,
+  Prisma,
+} from "@prisma/client";
 
 const router = Router();
 
@@ -97,6 +105,72 @@ router.post(
     });
   },
 );
+
+/**
+ * GET /api/admin/card-orders?status= — recent card payment orders for
+ * reconciliation, newest first (max 200). Includes a summary (counts by status
+ * + total received) and resolves buyer/recipient names for readability.
+ */
+router.get("/card-orders", async (req: Request, res: Response) => {
+  const raw = typeof req.query.status === "string" ? req.query.status : "";
+  const statusFilter = (["pending", "paid", "expired", "cancelled"] as const).includes(
+    raw as CardOrderStatus,
+  )
+    ? (raw as CardOrderStatus)
+    : undefined;
+
+  const orders = await prisma.cardOrder.findMany({
+    where: statusFilter ? { status: statusFilter } : {},
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  });
+
+  // Resolve buyer + recipient names in a single batched query.
+  const userIds = Array.from(
+    new Set(orders.flatMap((o) => [o.userId, o.targetUserId])),
+  );
+  const users = userIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        include: { profile: { select: { name: true } } },
+      })
+    : [];
+  const byId = new Map(users.map((u) => [u.id, u] as const));
+
+  const [statusCounts, paidAgg] = await Promise.all([
+    prisma.cardOrder.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.cardOrder.aggregate({
+      where: { status: "paid" },
+      _sum: { amountTiyin: true },
+    }),
+  ]);
+
+  const counts: Record<string, number> = {};
+  for (const s of statusCounts) counts[s.status] = s._count._all;
+
+  res.json({
+    summary: {
+      counts,
+      totalReceived: formatTiyin(paidAgg._sum.amountTiyin ?? 0),
+    },
+    orders: orders.map((o) => {
+      const buyer = byId.get(o.userId);
+      const isGift = o.targetUserId !== o.userId;
+      const recipient = isGift ? byId.get(o.targetUserId) : undefined;
+      return {
+        id: o.id,
+        kind: o.kind,
+        amount: formatTiyin(o.amountTiyin),
+        status: o.status,
+        buyerName: buyer?.profile?.name ?? null,
+        buyerTelegramId: buyer?.telegramId ? buyer.telegramId.toString() : null,
+        recipientName: isGift ? recipient?.profile?.name ?? null : null,
+        createdAt: o.createdAt.toISOString(),
+        paidAt: o.paidAt ? o.paidAt.toISOString() : null,
+      };
+    }),
+  });
+});
 
 /**
  * POST /api/admin/seed — load ~12 sample/test profiles into the feed.
