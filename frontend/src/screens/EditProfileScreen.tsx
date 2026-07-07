@@ -128,7 +128,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
       {/* Body */}
       <div className="flex-1 space-y-6 overflow-y-auto p-4 pb-10">
         {/* Photos */}
-        <Field label={t("edit.photos")}>
+        <Field label={t("edit.photos")} weight={15} done={photos.length >= 4}>
           <PhotoGrid photos={photos} onChange={setPhotos} />
           {photoError && (
             <p className="mt-2 text-sm text-pass">{t("edit.photosRequired")}</p>
@@ -136,7 +136,11 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         </Field>
 
         {/* Verification */}
-        <Field label={t("verify.sectionLabel")}>
+        <Field
+          label={t("verify.sectionLabel")}
+          weight={15}
+          done={verificationStatus === "verified" || verificationStatus === "pending"}
+        >
           {verificationStatus === "verified" ? (
             <div className="flex items-center gap-2 rounded-xl bg-sky-500/15 px-4 py-3 text-sm font-semibold text-sky-300">
               <VerifiedBadge /> {t("verify.statusVerified")}
@@ -188,7 +192,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         </Field>
 
         {/* Bio */}
-        <Field label={t("edit.bio")}>
+        <Field label={t("edit.bio")} weight={15} done={bio.trim().length > 0}>
           <textarea
             className="w-full rounded-xl bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-tg outline-none placeholder:text-tg-hint"
             rows={3}
@@ -201,7 +205,7 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         </Field>
 
         {/* Height */}
-        <Field label={t("edit.height")}>
+        <Field label={t("edit.height")} weight={13} done={!!height}>
           <div className="rounded-xl bg-[var(--tg-secondary-bg-color)] p-4">
             <div className="mb-2 flex items-center gap-2">
               <Ruler className="h-5 w-5 text-brand" />
@@ -220,7 +224,11 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
         </Field>
 
         {/* Interests */}
-        <Field label={`${t("edit.interests")} (${interests.length}/${MAX_INTERESTS})`}>
+        <Field
+          label={`${t("edit.interests")} (${interests.length}/${MAX_INTERESTS})`}
+          weight={13}
+          done={interests.length >= 3}
+        >
           <div className="flex flex-wrap gap-2">
             {(ref?.interests ?? []).map((key) => {
               const active = interests.includes(key);
@@ -251,6 +259,8 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
               <SmokingIcon className="h-4 w-4" /> {t("edit.smoking")}
             </span>
           }
+          weight={13}
+          done={!!smoking}
         >
           <HabitPicker
             value={smoking}
@@ -267,6 +277,8 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
               <DrinkingIcon className="h-4 w-4" /> {t("edit.drinking")}
             </span>
           }
+          weight={13}
+          done={!!drinking}
         >
           <HabitPicker
             value={drinking}
@@ -283,6 +295,8 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
               <GraduationCap className="h-4 w-4" /> {t("edit.study")}
             </span>
           }
+          weight={13}
+          done={studyOn || workOn}
         >
           <Toggle on={studyOn} onChange={setStudyOn} />
           {studyOn && (
@@ -370,10 +384,32 @@ export function EditProfileScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
+function Field({
+  label,
+  weight,
+  done,
+  children,
+}: {
+  label: React.ReactNode;
+  weight?: number;
+  done?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-tg-hint">{label}</p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-tg-hint">{label}</p>
+        {weight != null && (
+          <span
+            className={`flex-shrink-0 text-xs font-bold ${
+              done ? "text-emerald-400" : "text-brand"
+            }`}
+          >
+            {done ? "✓ " : "+"}
+            {weight}%
+          </span>
+        )}
+      </div>
       {children}
     </div>
   );

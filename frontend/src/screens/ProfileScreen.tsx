@@ -11,20 +11,7 @@ import { PresentModal } from "../components/PresentModal";
 import { PremiumBadge } from "../components/PremiumBadge";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { Gift } from "lucide-react";
-import type { OwnProfile } from "../store/useStore";
-
-/** Rough profile-completeness percentage for the nudge bar. */
-function completeness(p: OwnProfile): number {
-  let score = 0;
-  const total = 6;
-  score += Math.min(p.photos.length / 3, 1);
-  if (p.bio) score += 1;
-  if (p.heightCm) score += 1;
-  score += Math.min(p.interests.length / 3, 1);
-  if (p.smoking) score += 1;
-  if (p.drinking) score += 1;
-  return Math.round((score / total) * 100);
-}
+import { profileCompletenessPct } from "../lib/completeness";
 
 export function ProfileScreen() {
   const t = useT();
@@ -63,7 +50,7 @@ export function ProfileScreen() {
     return <EditProfileScreen onClose={() => setEditing(false)} />;
   }
 
-  const pct = profile ? completeness(profile) : 0;
+  const pct = profile ? profileCompletenessPct(profile) : 0;
 
   return (
     <div className="min-h-full px-4 pb-6 pt-4">

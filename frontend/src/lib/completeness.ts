@@ -1,29 +1,38 @@
 import type { OwnProfile } from "../store/useStore";
 
 /**
- * Profile completeness as a 0–100 percentage. Six equally-weighted factors:
- * 3 photos, bio, height, 3 interests, smoking, drinking. Kept in sync with the
- * backend's isProfileComplete() used for the free-boost reward.
+ * Per-field completion weights. Verification / bio / photos are worth 15% each;
+ * the rest 13%. All fields done → capped at 100% → unlocks the free 1-day boost.
  */
+export const WEIGHT = {
+  photos: 15,
+  bio: 15,
+  verification: 15,
+  height: 13,
+  interests: 13,
+  smoking: 13,
+  drinking: 13,
+  workStudy: 13,
+} as const;
+
+/** Whether verification counts (selfie submitted → pending, or verified). */
+export function verificationDone(status: string): boolean {
+  return status === "verified" || status === "pending";
+}
+
 export function profileCompletenessPct(p: OwnProfile): number {
-  let score = 0;
-  const total = 6;
-  score += Math.min(p.photos.length / 3, 1);
-  if (p.bio) score += 1;
-  if (p.heightCm) score += 1;
-  score += Math.min(p.interests.length / 3, 1);
-  if (p.smoking) score += 1;
-  if (p.drinking) score += 1;
-  return Math.round((score / total) * 100);
+  let sum = 0;
+  if (p.photos.length >= 4) sum += WEIGHT.photos;
+  if (p.bio) sum += WEIGHT.bio;
+  if (verificationDone(p.verificationStatus)) sum += WEIGHT.verification;
+  if (p.heightCm) sum += WEIGHT.height;
+  if (p.interests.length >= 3) sum += WEIGHT.interests;
+  if (p.smoking) sum += WEIGHT.smoking;
+  if (p.drinking) sum += WEIGHT.drinking;
+  if (p.studies || p.works) sum += WEIGHT.workStudy;
+  return Math.min(100, sum);
 }
 
 export function isProfileComplete(p: OwnProfile): boolean {
-  return (
-    p.photos.length >= 3 &&
-    !!p.bio &&
-    !!p.heightCm &&
-    p.interests.length >= 3 &&
-    !!p.smoking &&
-    !!p.drinking
-  );
+  return profileCompletenessPct(p) >= 100;
 }

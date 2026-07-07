@@ -29,8 +29,9 @@ export function isPremiumActive(premiumUntil: Date | null | undefined): boolean 
 }
 
 /**
- * Whether a profile is "100% complete" (matches the completion bar the user
- * sees): 3+ photos, bio, height, 3+ interests, smoking & drinking set.
+ * Whether a profile is "100% complete" (matches the weighted completion bar the
+ * user sees): 4+ photos, bio, verification (submitted/verified), height,
+ * 3+ interests, smoking, drinking, and study or work.
  */
 export function isProfileComplete(
   p: {
@@ -39,16 +40,23 @@ export function isProfileComplete(
     smoking: unknown;
     drinking: unknown;
     interests: string[];
+    studies?: boolean;
+    works?: boolean;
+    verificationStatus?: string;
   },
   photoCount: number,
 ): boolean {
+  const verified =
+    p.verificationStatus === "verified" || p.verificationStatus === "pending";
   return (
-    photoCount >= 3 &&
+    photoCount >= 4 &&
     !!p.bio &&
     !!p.heightCm &&
     (p.interests?.length ?? 0) >= 3 &&
     !!p.smoking &&
-    !!p.drinking
+    !!p.drinking &&
+    !!(p.studies || p.works) &&
+    verified
   );
 }
 
