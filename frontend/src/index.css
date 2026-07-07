@@ -335,42 +335,22 @@ img {
   animation: logoPulse 2s ease-in-out infinite;
 }
 
-/* Round logo badge + rotating pink→purple glow halo. */
-.loading-halo {
-  position: absolute;
-  inset: -7px;
+/* Sleek indeterminate loading bar. */
+.loading-bar {
+  display: block;
+  height: 100%;
+  width: 45%;
   border-radius: 9999px;
-  background: conic-gradient(#ff2e9a, #a855f7, #ff2e9a, #a855f7, #ff2e9a);
-  filter: blur(9px);
-  opacity: 0.8;
-  animation: haloSpin 3.6s linear infinite;
+  background: linear-gradient(90deg, #ff2e9a, #a855f7);
+  animation: barSlide 1.2s ease-in-out infinite;
 }
-.loading-badge {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 9999px;
-  background: radial-gradient(circle at 50% 42%, #12141d 0%, #050608 72%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-}
-@keyframes haloSpin {
-  to {
-    transform: rotate(360deg);
+@keyframes barSlide {
+  0% {
+    transform: translateX(-130%);
   }
-}
-@keyframes logoFloat {
-  0%,
   100% {
-    transform: translateY(0);
+    transform: translateX(320%);
   }
-  50% {
-    transform: translateY(-9px);
-  }
-}
-.animate-logoFloat {
-  animation: logoFloat 3s ease-in-out infinite;
 }
 
 @keyframes ringPulse {
