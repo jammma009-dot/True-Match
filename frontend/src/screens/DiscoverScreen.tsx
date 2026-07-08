@@ -52,15 +52,46 @@ export function DiscoverScreen({
   const [expanded, setExpanded] = useState(false);
 
   // Drag / animation state. During a drag we update the DOM imperatively (via
-  // refs) so we DON'T re-render React on every pointermove — that's what made
-  // swiping feel laggy. React state only changes on start/end + fly-off.
-  const [dragActive, setDragActive] = useState(false);
+  // refs) so we DON'T re-render React on every pointermove — no React state
+  // changes at all between pointerdown and release. Style writes are batched
+  // into a single requestAnimationFrame per display frame so low-end phones
+  // never do more compositor work than one update per frame.
   const [leaving, setLeaving] = useState<null | "like" | "pass">(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  const rafRef = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const likeStampRef = useRef<HTMLDivElement>(null);
   const nopeStampRef = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
+
+  const SNAP_TRANSITION = "transform 0.32s cubic-bezier(0.22,1,0.36,1)";
+
+  const cancelRaf = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  };
+
+  // Applies the latest drag position — runs at most once per frame.
+  const applyDragFrame = () => {
+    rafRef.current = null;
+    if (!startRef.current) return;
+    const { dx, dy } = dragRef.current;
+    const card = cardRef.current;
+    if (card) {
+      card.style.transform = `translate3d(${dx}px, ${dy * 0.12}px, 0) rotate(${dx / 22}deg)`;
+    }
+    if (likeStampRef.current) {
+      likeStampRef.current.style.opacity = String(Math.min(1, Math.max(0, dx / SWIPE_THRESHOLD)));
+    }
+    if (nopeStampRef.current) {
+      nopeStampRef.current.style.opacity = String(Math.min(1, Math.max(0, -dx / SWIPE_THRESHOLD)));
+    }
+  };
+
+  useEffect(() => cancelRaf, []);
 
   const resetStamps = () => {
     if (likeStampRef.current) likeStampRef.current.style.opacity = "0";
@@ -93,8 +124,10 @@ export function DiscoverScreen({
   const triggerSwipe = (action: "like" | "pass") => {
     if (!current || busyRef.current || leaving) return;
     busyRef.current = true;
+    cancelRaf();
     resetStamps();
-    setDragActive(false);
+    // Ensure the fly-off animates even if a drag just set transition to none.
+    if (cardRef.current) cardRef.current.style.transition = SNAP_TRANSITION;
     setLeaving(action);
     haptics.impact(action === "like" ? "medium" : "light");
 
@@ -176,10 +209,12 @@ export function DiscoverScreen({
   };
 
   // ---- Pointer (drag + tap) handling on the card ----
+  // Zero React state changes between pointerdown and release: everything is
+  // done with direct style writes, batched to one update per frame via rAF.
   const onPointerDown = (e: React.PointerEvent) => {
     if (leaving) return;
     startRef.current = { x: e.clientX, y: e.clientY };
-    setDragActive(true);
+    dragRef.current = { dx: 0, dy: 0 };
     const card = cardRef.current;
     if (card) card.style.transition = "none";
     card?.setPointerCapture(e.pointerId);
@@ -187,24 +222,29 @@ export function DiscoverScreen({
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!startRef.current) return;
-    const dx = e.clientX - startRef.current.x;
-    const dy = e.clientY - startRef.current.y;
-    // Imperative — no React re-render, so dragging stays buttery smooth.
+    dragRef.current = {
+      dx: e.clientX - startRef.current.x,
+      dy: e.clientY - startRef.current.y,
+    };
+    // Coalesce style writes: pointermove can fire far more often than the
+    // screen refreshes on low-end phones — only paint once per frame.
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(applyDragFrame);
+    }
+  };
+
+  const snapBack = () => {
     const card = cardRef.current;
     if (card) {
-      card.style.transform = `translate3d(${dx}px, ${dy * 0.12}px, 0) rotate(${dx / 22}deg)`;
-    }
-    if (likeStampRef.current) {
-      likeStampRef.current.style.opacity = String(Math.min(1, Math.max(0, dx / SWIPE_THRESHOLD)));
-    }
-    if (nopeStampRef.current) {
-      nopeStampRef.current.style.opacity = String(Math.min(1, Math.max(0, -dx / SWIPE_THRESHOLD)));
+      card.style.transition = SNAP_TRANSITION;
+      card.style.transform = "translate3d(0,0,0)";
     }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    cancelRaf();
     if (!startRef.current || !current) {
-      setDragActive(false);
+      snapBack();
       return;
     }
     const dx = e.clientX - startRef.current.x;
@@ -225,16 +265,15 @@ export function DiscoverScreen({
         }
         haptics.select();
       }
-      setDragActive(false);
+      snapBack();
       return;
     }
 
     if (Math.abs(dx) > SWIPE_THRESHOLD) {
       triggerSwipe(dx > 0 ? "like" : "pass");
     } else {
-      // Snap back — React re-render restores transform to identity with a
-      // transition, animating the card home.
-      setDragActive(false);
+      // Snap back home — imperative transition, no React re-render needed.
+      snapBack();
     }
   };
 
@@ -302,14 +341,11 @@ export function DiscoverScreen({
 
   const photo = current.photos[photoIdx]?.url ?? current.photos[0]?.url;
 
-  // Card transform is React-controlled only when NOT actively dragging (fly-off
-  // or snap-back). During a drag the transform is set imperatively in onPointerMove.
+  // Card transform is React-controlled only for the fly-off. During a drag
+  // (and snap-back) the transform/transition are set imperatively.
   const transform = leaving
     ? `translateX(${leaving === "like" ? 130 : -130}%) rotate(${leaving === "like" ? 18 : -18}deg)`
     : "translate3d(0,0,0)";
-  const transition = dragActive
-    ? "none"
-    : "transform 0.32s cubic-bezier(0.22,1,0.36,1)";
 
   const likeOpacity = leaving === "like" ? 1 : 0;
   const nopeOpacity = leaving === "pass" ? 1 : 0;
@@ -328,7 +364,7 @@ export function DiscoverScreen({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        style={{ transform, transition, touchAction: "none", willChange: "transform" }}
+        style={{ transform, transition: SNAP_TRANSITION, touchAction: "none", willChange: "transform" }}
         className="relative h-full w-full cursor-grab overflow-hidden rounded-[28px] bg-neutral-900 shadow-2xl shadow-black/40 active:cursor-grabbing"
       >
         {/* Fallback gradient (shows if the image is missing/broken) */}
@@ -347,7 +383,7 @@ export function DiscoverScreen({
 
         {/* Top bar: brand + FOR YOU / NEARBY toggle + more */}
         <div className="absolute inset-x-3 top-3 z-30 flex items-center gap-2">
-          <div className="flex flex-1 items-center rounded-full bg-black/40 p-1 backdrop-blur">
+          <div className="flex flex-1 items-center rounded-full bg-black/55 p-1">
             {(["foryou", "nearby"] as const).map((tab) => (
               <button
                 key={tab}
@@ -367,7 +403,7 @@ export function DiscoverScreen({
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setShowFilter(true)}
             aria-label="filters"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur active:bg-black/70"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/60 text-white active:bg-black/75"
           >
             <SlidersHorizontal className="h-5 w-5" />
           </button>
@@ -375,7 +411,7 @@ export function DiscoverScreen({
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setReportFor(current.userId)}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur active:bg-black/70"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/60 text-white active:bg-black/75"
           >
             <MoreVertical className="h-5 w-5" />
           </button>
@@ -395,14 +431,14 @@ export function DiscoverScreen({
         {/* LIKE / NOPE stamps (opacity updated imperatively while dragging) */}
         <div
           ref={likeStampRef}
-          style={{ opacity: likeOpacity }}
+          style={{ opacity: likeOpacity, willChange: "opacity" }}
           className="pointer-events-none absolute left-5 top-24 z-20 -rotate-12 rounded-lg border-4 border-brand px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-brand"
         >
           LIKE
         </div>
         <div
           ref={nopeStampRef}
-          style={{ opacity: nopeOpacity }}
+          style={{ opacity: nopeOpacity, willChange: "opacity" }}
           className="pointer-events-none absolute right-5 top-24 z-20 rotate-12 rounded-lg border-4 border-white px-3 py-1 text-2xl font-extrabold uppercase tracking-wider text-white"
         >
           NOPE
@@ -423,16 +459,16 @@ export function DiscoverScreen({
 
           {/* Core badges — always shown (one row) */}
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+            <span className="flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-[11px] font-semibold text-white">
               <MapPin className="h-3 w-3" /> {t(`city.${current.city}`)}
             </span>
-            <span className="rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+            <span className="rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-[11px] font-semibold text-white">
               {current.gender === "male"
                 ? t("onboarding.gender.male")
                 : t("onboarding.gender.female")}
             </span>
             {current.heightCm && (
-              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/30 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+              <span className="flex items-center gap-1 rounded-full border border-brand/50 bg-brand/40 px-2.5 py-1 text-[11px] font-semibold text-white">
                 <Ruler className="h-3 w-3" /> {current.heightCm} cm
               </span>
             )}
@@ -442,13 +478,13 @@ export function DiscoverScreen({
           {(current.works || current.studies) && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {current.works && (
-                <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/25 px-2 py-0.5 text-[11px] font-semibold text-amber-100 backdrop-blur">
+                <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-950/60 px-2 py-0.5 text-[11px] font-semibold text-amber-100">
                   <Briefcase className="h-3 w-3" /> {t("profile.workLabel")}
                   {current.work ? `: ${current.work}` : ""}
                 </span>
               )}
               {current.studies && (
-                <span className="flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/25 px-2 py-0.5 text-[11px] font-semibold text-sky-100 backdrop-blur">
+                <span className="flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-950/60 px-2 py-0.5 text-[11px] font-semibold text-sky-100">
                   <GraduationCap className="h-3 w-3" /> {t("profile.studyLabel")}
                   {current.education ? `: ${current.education}` : ""}
                 </span>
@@ -466,14 +502,14 @@ export function DiscoverScreen({
                     return (
                       <span
                         key={key}
-                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
+                        className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white"
                       >
                         {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
                       </span>
                     );
                   })}
                   {current.interests.length > 2 && (
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur">
+                    <span className="rounded-full bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white/80">
                       +{current.interests.length - 2}
                     </span>
                   )}
@@ -493,12 +529,12 @@ export function DiscoverScreen({
               {(current.smoking || current.drinking) && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {current.smoking && (
-                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[11px] font-semibold text-white">
                       <SmokingIcon className="h-3 w-3" /> {t(`habit.${current.smoking}`)}
                     </span>
                   )}
                   {current.drinking && (
-                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                    <span className="flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[11px] font-semibold text-white">
                       <DrinkingIcon className="h-3 w-3" /> {t(`habit.${current.drinking}`)}
                     </span>
                   )}
@@ -512,7 +548,7 @@ export function DiscoverScreen({
                     return (
                       <span
                         key={key}
-                        className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur"
+                        className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white"
                       >
                         {Icon && <Icon className="h-3 w-3" />} {t(`interest.${key}`)}
                       </span>
@@ -551,7 +587,7 @@ export function DiscoverScreen({
         onClick={doRewind}
         onPointerDown={(e) => e.stopPropagation()}
         disabled={rewinding}
-        className="absolute left-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-amber-300 shadow-lg backdrop-blur active:scale-90 disabled:opacity-50"
+        className="absolute left-2 top-1/2 z-40 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-amber-300 shadow-lg active:scale-90 disabled:opacity-50"
       >
         <RotateCcw className={`h-5 w-5 ${rewinding ? "animate-spin" : ""}`} />
       </button>
