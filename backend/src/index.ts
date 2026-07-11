@@ -20,6 +20,7 @@ import safetyRouter from "./routes/safety";
 import adminRouter from "./routes/admin";
 import premiumRouter from "./routes/premium";
 import paymentsRouter from "./routes/payments";
+import broadcastRouter from "./broadcast/broadcast.routes";
 
 // Make BigInt JSON-serialisable as a safety net (we avoid returning it, but
 // this prevents accidental 500s if one ever leaks into a response).
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
   app.use("/api/payments", paymentsRouter);
   app.use("/api", safetyRouter); // /api/report, /api/block, /api/unblock
   app.use("/api/admin", adminRouter);
+  app.use("/api/broadcast", broadcastRouter);
 
   
   // ---------- Minimal admin panel (static HTML) ----------
