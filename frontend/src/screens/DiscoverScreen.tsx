@@ -410,7 +410,7 @@ export function DiscoverScreen({
 
         {/* Info overlay — compact by default (shows a preview), expands on "more" */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/40 to-transparent px-4 pb-[74px] pt-8">
-          <div className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+          <div className="mb-2 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
             <Heart className="h-3 w-3" fill="currentColor" />
             {t(`intent.${current.intent}`)}
           </div>
@@ -422,7 +422,7 @@ export function DiscoverScreen({
           </div>
 
           {/* Core badges — always shown (one row) */}
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             <span className="flex items-center gap-1 rounded-full border border-white/15 bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
               <MapPin className="h-3 w-3" /> {t(`city.${current.city}`)}
             </span>
