@@ -306,7 +306,7 @@ export function DiscoverScreen({
   // or snap-back). During a drag the transform is set imperatively in onPointerMove.
   const transform = leaving
     ? `translateX(${leaving === "like" ? 130 : -130}%) rotate(${leaving === "like" ? 18 : -18}deg)`
-    : "translate3d(0,0,0)";
+    : "none";
   const transition = dragActive
     ? "none"
     : "transform 0.32s cubic-bezier(0.22,1,0.36,1)";
@@ -328,7 +328,7 @@ export function DiscoverScreen({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        style={{ transform, transition, touchAction: "none", willChange: "transform" }}
+        style={{ transform, transition, touchAction: "none", willChange: leaving ? "transform" : "auto" }}
         className="relative h-full w-full cursor-grab overflow-hidden rounded-[28px] bg-neutral-900 shadow-2xl shadow-black/40 active:cursor-grabbing"
       >
         {/* Fallback gradient (shows if the image is missing/broken) */}
