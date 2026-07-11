@@ -70,7 +70,8 @@ async function main(): Promise<void> {
   app.use("/api/payments", paymentsRouter);
   app.use("/api", safetyRouter); // /api/report, /api/block, /api/unblock
   app.use("/api/admin", adminRouter);
-
+  app.use("/api/broadcast", broadcastRouter);
+  
   // ---------- Minimal admin panel (static HTML) ----------
   app.use("/admin", express.static(path.resolve(process.cwd(), "public")));
 
