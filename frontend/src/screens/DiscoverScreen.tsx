@@ -409,7 +409,7 @@ export function DiscoverScreen({
         </div>
 
         {/* Info overlay — compact by default (shows a preview), expands on "more" */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/40 to-transparent px-4 pb-[74px] pt-8">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/40 to-transparent px-4 pb-[96px] pt-8">
           <div className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-brand">
             <Heart className="h-3 w-3" fill="currentColor" />
             {t(`intent.${current.intent}`)}
