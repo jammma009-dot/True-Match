@@ -1,4 +1,4 @@
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, GrammyError } from "grammy";
 import { Gender, ProfileStatus, Language, City } from "@prisma/client";
 import { bot } from "../bot";
 import { prisma } from "../lib/prisma";
@@ -130,6 +130,22 @@ function pickMessage(messages: BroadcastMessages, locale: Locale): string {
 
 export type JobStatus = "running" | "done";
 
+/**
+ * A tally of failures grouped by cause, so the admin panel can show a real
+ * breakdown ("blocked: 3, rate limited: 1") instead of just the single most
+ * recent error string. Every failed send increments exactly one bucket.
+ */
+export interface BroadcastErrorBreakdown {
+  /** User blocked the bot / deactivated / chat not found — not retryable. */
+  blocked: number;
+  /** Message text wasn't valid Markdown; we successfully retried as plain text. */
+  invalidMarkdownRetried: number;
+  /** Still failing after honoring Telegram's 429 retry_after up to the cap. */
+  rateLimited: number;
+  /** Anything else (unexpected Telegram or network error). */
+  other: number;
+}
+
 export interface BroadcastJob {
   id: string;
   total: number;
@@ -139,6 +155,10 @@ export interface BroadcastJob {
   status: JobStatus;
   startedAt: number;
   finishedAt?: number;
+  /** Human-readable reason for the most recent failure, if any (for quick glance). */
+  lastError?: string;
+  /** Failure counts grouped by cause (for the admin-panel breakdown). */
+  errors: BroadcastErrorBreakdown;
 }
 
 // In-memory job tracker. Good enough for an admin-only, single-instance MVP
@@ -152,6 +172,9 @@ export function getJob(id: string): BroadcastJob | undefined {
 
 /** Delay between individual sends. Keeps well under Telegram's ~30 msg/sec global cap. */
 const SEND_DELAY_MS = 45;
+
+/** Hard ceiling on how long we'll ever wait for a single recipient across all 429 backoffs. */
+const MAX_TOTAL_BACKOFF_MS = 60_000;
 
 /**
  * Resolve the audience, then start sending in the background. Returns
@@ -174,6 +197,7 @@ export async function startBroadcast(
     skipped: 0,
     status: "running",
     startedAt: Date.now(),
+    errors: { blocked: 0, invalidMarkdownRetried: 0, rateLimited: 0, other: 0 },
   };
   jobs.set(jobId, job);
 
@@ -184,17 +208,7 @@ export async function startBroadcast(
         job.skipped += 1;
         continue;
       }
-      try {
-        await bot.api.sendMessage(Number(u.telegramId), text, {
-          parse_mode: "Markdown",
-          reply_markup: ctaButton(u.language),
-        });
-        job.sent += 1;
-      } catch {
-        // User blocked the bot, deleted their account, etc. Never let one
-        // failure stop the rest of the batch.
-        job.failed += 1;
-      }
+      await sendWithRetry(u, text, job);
       await new Promise((resolve) => setTimeout(resolve, SEND_DELAY_MS));
     }
     job.status = "done";
@@ -202,4 +216,127 @@ export async function startBroadcast(
   })();
 
   return { jobId, total: audience.length };
+}
+
+/**
+ * Send one message, honoring Telegram's 429 ("Too Many Requests") responses
+ * and falling back to plain text if the admin's message text isn't valid
+ * Markdown (Telegram rejects the *whole* message with a 400 in that case —
+ * without this fallback, one stray "_" or "*" in the text would fail 100%
+ * of sends).
+ *
+ * Failure accounting is bucketed by cause on job.errors so the admin panel
+ * can show a real breakdown, and the most recent reason is also kept on
+ * job.lastError for a quick glance. Non-retryable errors (blocked bot,
+ * deleted account, etc.) are counted immediately — retrying wouldn't help.
+ *
+ * Retry budget notes:
+ *  - The Markdown→plaintext fallback does NOT consume a 429 retry attempt;
+ *    it just flips the format and re-sends on a fresh attempt.
+ *  - 429 backoffs are capped both per-attempt (maxRetries) and in total
+ *    wall-clock time (MAX_TOTAL_BACKOFF_MS) so one throttled recipient can
+ *    never stall the whole batch.
+ */
+async function sendWithRetry(
+  u: AudienceUser,
+  text: string,
+  job: BroadcastJob,
+  maxRetries = 3,
+): Promise<void> {
+  let useMarkdown = true;
+  let usedPlainTextFallback = false;
+  let backoffTotalMs = 0;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await bot.api.sendMessage(Number(u.telegramId), text, {
+        ...(useMarkdown ? { parse_mode: "Markdown" as const } : {}),
+        reply_markup: ctaButton(u.language),
+      });
+      job.sent += 1;
+      // The send succeeded only because we dropped bad Markdown — surface that
+      // as its own bucket so the admin knows their formatting was stripped.
+      if (usedPlainTextFallback) job.errors.invalidMarkdownRetried += 1;
+      return;
+    } catch (err) {
+      const description = errorDescription(err);
+
+      if (useMarkdown && /can't parse entities/i.test(description ?? "")) {
+        // The message text isn't valid Markdown — retry the SAME recipient as
+        // plain text. This doesn't burn a 429 attempt: rewind the counter so
+        // the plaintext send gets a full, fresh retry budget of its own.
+        useMarkdown = false;
+        usedPlainTextFallback = true;
+        attempt -= 1;
+        continue;
+      }
+
+      const retryAfterSec = extractRetryAfter(err);
+      if (retryAfterSec != null && attempt < maxRetries) {
+        const waitMs = retryAfterSec * 1000 + 250;
+        // Honor Telegram's wait, but never blow past the total backoff ceiling.
+        if (backoffTotalMs + waitMs <= MAX_TOTAL_BACKOFF_MS) {
+          backoffTotalMs += waitMs;
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+        // Would exceed our ceiling — give up on this recipient as rate-limited.
+        recordFailure(job, "rateLimited", description ?? String(err), u.id);
+        return;
+      }
+
+      // Terminal for this recipient. Classify it so the breakdown is useful.
+      const bucket = classifyFailure(err, retryAfterSec != null);
+      recordFailure(job, bucket, description ?? String(err), u.id);
+      return;
+    }
+  }
+}
+
+/** Increment the matching failure bucket + overall counter, log, and remember the last reason. */
+function recordFailure(
+  job: BroadcastJob,
+  bucket: keyof BroadcastErrorBreakdown,
+  reason: string,
+  userId: string,
+): void {
+  job.failed += 1;
+  job.errors[bucket] += 1;
+  job.lastError = reason;
+  console.error(`[broadcast] send to ${userId} failed [${bucket}]:`, reason);
+}
+
+/**
+ * Decide which failure bucket an error belongs to. `hitRateLimit` is true when
+ * we already saw a 429 for this recipient but exhausted our retries on it.
+ */
+function classifyFailure(
+  err: unknown,
+  hitRateLimit: boolean,
+): keyof BroadcastErrorBreakdown {
+  if (hitRateLimit) return "rateLimited";
+  const description = errorDescription(err)?.toLowerCase() ?? "";
+  if (
+    /blocked by the user|user is deactivated|chat not found|bot was kicked|user not found/.test(
+      description,
+    )
+  ) {
+    return "blocked";
+  }
+  return "other";
+}
+
+/** Pull Telegram's human-readable error description out of a grammY error, if present. */
+function errorDescription(err: unknown): string | undefined {
+  if (err instanceof GrammyError) return err.description;
+  return undefined;
+}
+
+/** Extract Telegram's `retry_after` (seconds) from a 429 error, if that's what this is. */
+function extractRetryAfter(err: unknown): number | null {
+  if (err instanceof GrammyError && err.error_code === 429) {
+    const retryAfter = err.parameters?.retry_after;
+    if (typeof retryAfter === "number") return retryAfter;
+  }
+  return null;
 }
