@@ -1,6 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+<!-- skill:chrome -->
+<style>
+/* Credit line — bottom-right */
+.design-ui-credit {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  font: 11px/1 system-ui, sans-serif;
+  color: rgba(128,128,128,0.5);
+  pointer-events: none;
+  z-index: 2147483647;
+  transition: opacity 0.4s ease;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* Hide chrome on touch devices */
+@media (hover: none) {
+  .design-ui-credit { display: none; }
+}
+
+/* Print fixes */
+@media print {
+  * {
+    transition: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .design-ui-credit { display: none !important; }
+}
+
+</style>
+<script>
+(function () {
+    // Design-ui pages are single compositions, so the whole body is editable.
+    function markEditable() {
+        document.body.classList.add('artifact-editable');
+    }
+
+    // Credit badge with idle-fade. Hover devices only.
+    function initChromeUI() {
+        if (!matchMedia('(hover: hover)').matches) return;
+
+        var credit = document.createElement('div');
+        credit.className = 'design-ui-credit';
+        credit.setAttribute('aria-hidden', 'true');
+        credit.innerHTML = '\u{1F49C} by ClickUp Brain';
+        document.body.appendChild(credit);
+
+        var timer = null;
+        var fade = function (out) { credit.style.opacity = out ? '0' : ''; };
+        fade(true);
+        var show = function () {
+            fade(false);
+            clearTimeout(timer);
+            timer = setTimeout(function () { fade(true); }, 3000);
+        };
+        document.addEventListener('mousemove', show);
+        show();
+    }
+
+    function init() {
+        markEditable();
+        initChromeUI();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chrome -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>True Match — Broadcast</title>
@@ -26,11 +105,22 @@
       .count-pill { background: #26262e; padding: 6px 14px; border-radius: 20px; font-size: 14px; }
       .progress-wrap { background: #26262e; border-radius: 8px; height: 10px; overflow: hidden; margin-top: 10px; }
       .progress-bar { background: #6d5efc; height: 100%; width: 0%; transition: width .2s; }
-      .stats { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: #9a9aa5; }
+      .stats { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: #9a9aa5; flex-wrap: wrap; }
       .stats b { color: #eee; }
       .warn { color: #f39c12; font-size: 13px; margin-top: 8px; }
       h2 { font-size: 16px; margin: 0 0 4px; }
       .sub { color: #9a9aa5; font-size: 13px; margin: 0 0 14px; }
+      .breakdown { margin-top: 12px; font-size: 13px; color: #9a9aa5; display: none; }
+      .breakdown h3 { font-size: 13px; color: #eee; margin: 0 0 6px; }
+      .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+      .chip { background: #26262e; padding: 4px 10px; border-radius: 6px; font-size: 12px; }
+      .chip b { color: #eee; }
+      .chip.zero { opacity: 0.4; }
+      .chip.blocked b { color: #e57373; }
+      .chip.markdown b { color: #f39c12; }
+      .chip.rate b { color: #64b5f6; }
+      .chip.other b { color: #ba9ff2; }
+      .last-error { margin-top: 8px; font-size: 12px; color: #777; word-break: break-word; }
     </style>
   </head>
   <body>
@@ -141,7 +231,7 @@
           <textarea id="msg-uz" placeholder="Masalan: 🎉 Bugun barcha uchun Premium 50% chegirma bilan!"></textarea>
           <label>Message — Русский (ru)</label>
           <textarea id="msg-ru" placeholder="Например: 🎉 Сегодня Premium со скидкой 50% для всех!"></textarea>
-          <p class="hint">Markdown is supported (e.g. *bold*, _italic_).</p>
+          <p class="hint">Markdown is supported (e.g. *bold*, _italic_). If your text has stray *, _, [ or `, the send auto-retries as plain text so it never fails.</p>
 
           <div class="actions">
             <button class="primary" id="sendBtn" onclick="sendBroadcast()">Send broadcast</button>
@@ -158,6 +248,17 @@
             <span>Failed: <b id="statFailed">0</b></span>
             <span>Skipped (no text for their language): <b id="statSkipped">0</b></span>
             <span>Status: <b id="statStatus">running</b></span>
+          </div>
+
+          <div class="breakdown" id="breakdown">
+            <h3>Failure breakdown</h3>
+            <div class="chips">
+              <span class="chip blocked zero" id="chipBlocked">Blocked / deleted: <b id="errBlocked">0</b></span>
+              <span class="chip markdown zero" id="chipMarkdown">Bad Markdown (sent as plain text): <b id="errMarkdown">0</b></span>
+              <span class="chip rate zero" id="chipRate">Rate limited: <b id="errRate">0</b></span>
+              <span class="chip other zero" id="chipOther">Other: <b id="errOther">0</b></span>
+            </div>
+            <div class="last-error" id="lastErrorRow" style="display:none">Most recent error: <span id="lastError"></span></div>
           </div>
         </div>
       </main>
@@ -256,6 +357,11 @@
         pollStatus(res.jobId);
       }
 
+      function setChip(chipId, valId, count) {
+        document.getElementById(valId).textContent = count;
+        document.getElementById(chipId).classList.toggle("zero", !count);
+      }
+
       function pollStatus(jobId) {
         if (pollTimer) clearInterval(pollTimer);
         pollTimer = setInterval(async () => {
@@ -270,6 +376,22 @@
           document.getElementById("statFailed").textContent = job.failed;
           document.getElementById("statSkipped").textContent = job.skipped;
           document.getElementById("statStatus").textContent = job.status;
+
+          const e = job.errors || {};
+          const anyError =
+            (e.blocked || 0) + (e.invalidMarkdownRetried || 0) +
+            (e.rateLimited || 0) + (e.other || 0) > 0;
+          document.getElementById("breakdown").style.display = anyError ? "block" : "none";
+          setChip("chipBlocked", "errBlocked", e.blocked || 0);
+          setChip("chipMarkdown", "errMarkdown", e.invalidMarkdownRetried || 0);
+          setChip("chipRate", "errRate", e.rateLimited || 0);
+          setChip("chipOther", "errOther", e.other || 0);
+
+          if (job.lastError) {
+            document.getElementById("lastErrorRow").style.display = "block";
+            document.getElementById("lastError").textContent = job.lastError;
+          }
+
           if (job.status === "done") {
             clearInterval(pollTimer);
             document.getElementById("sendBtn").disabled = false;
