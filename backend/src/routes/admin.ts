@@ -6,6 +6,7 @@ import { validateBody } from "../middleware/validate";
 import { computeAge, isAdult, MIN_AGE } from "../utils/age";
 import { cityLabel } from "../utils/cities";
 import { notifyApproved, notifyRejected, notifyPremiumGranted, notifyBoostGranted, notifyVerified } from "../bot/notify";
+import { rewardReferrerIfEligible } from "../referral/referral.service"; // NEW: referral program
 import { createSampleProfiles, removeSampleProfiles } from "../services/sampleData";
 import { getSettings } from "../lib/settings";
 import {
@@ -234,6 +235,7 @@ router.post(
       data: { status: "approved", genderLocked: true, rejectionReason: null },
     });
     void notifyApproved(userId);
+    void rewardReferrerIfEligible(userId); // NEW: referral program
     res.json({ ok: true });
   },
 );
@@ -451,7 +453,10 @@ router.patch(
 
     await prisma.profile.update({ where: { userId }, data: update });
 
-    if (notify === "approved") void notifyApproved(userId);
+    if (notify === "approved") {
+      void notifyApproved(userId);
+      void rewardReferrerIfEligible(userId); // NEW: referral program
+    }
     if (notify === "rejected") void notifyRejected(userId);
 
     res.json({ ok: true });

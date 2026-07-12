@@ -8,6 +8,7 @@ import { INTEREST_ICON, SmokingIcon, DrinkingIcon } from "../lib/profileMeta";
 import { EditProfileScreen } from "./EditProfileScreen";
 import { PremiumModal } from "../components/PremiumModal";
 import { PresentModal } from "../components/PresentModal";
+import { ReferralModal } from "../components/ReferralModal";
 import { PremiumBadge } from "../components/PremiumBadge";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { Gift } from "lucide-react";
@@ -23,6 +24,7 @@ export function ProfileScreen() {
   const [deleting, setDeleting] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [showPresent, setShowPresent] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
   const contactUsername = me?.settings?.contactUsername ?? null;
   const paymentUsername = me?.settings?.paymentUsername ?? null;
   const priceStars = me?.settings?.premiumPriceStars ?? 250;
@@ -236,6 +238,25 @@ export function ProfileScreen() {
           </span>
           <ChevronRight className="h-5 w-5 text-white/80" />
         </button>
+
+        {/* Invite friends (referral) */}
+        <button
+          type="button"
+          onClick={() => {
+            haptics.impact("light");
+            setShowReferral(true);
+          }}
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[var(--tg-secondary-bg-color)] px-4 py-3 text-left active:opacity-80"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/20 text-pink-400">
+            <Gift className="h-5 w-5" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-semibold text-tg">{t("referral.cardTitle")}</span>
+            <span className="block text-xs text-tg-hint">{t("referral.cardSubtitle")}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-tg-hint" />
+        </button>
       </div>
 
       {/* Delete profile */}
@@ -282,6 +303,8 @@ export function ProfileScreen() {
           onClose={() => setShowPresent(false)}
         />
       )}
+
+      {showReferral && <ReferralModal onClose={() => setShowReferral(false)} />}
     </div>
   );
 }

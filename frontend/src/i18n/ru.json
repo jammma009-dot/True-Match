@@ -149,6 +149,7 @@
   "profile.contact": "Связаться с нами",
   "profile.premium": "Купить Premium",
   "profile.present": "Купить подарок (Буст)",
+  "profile.referral": "Пригласите друзей",
 
   "present.title": "Буст — будьте вверху",
   "present.subtitle": "3 дня показывайтесь в самом верху ленты.",
@@ -165,6 +166,20 @@
   "present.done": "Готово! Буст активирован 🚀",
   "present.error": "Не удалось выполнить оплату. Попробуйте снова.",
   "present.activeTag": "Активен",
+
+  "referral.cardTitle": "Пригласите друзей",
+  "referral.cardSubtitle": "+1 день буста за каждого друга",
+  "referral.modalTitle": "Пригласите друзей",
+  "referral.modalSubtitle": "Получайте +1 день Буста за каждого приглашённого и одобренного друга!",
+  "referral.linkLabel": "Ваша реферальная ссылка",
+  "referral.copy": "Копировать",
+  "referral.copied": "Скопировано!",
+  "referral.share": "Поделиться",
+  "referral.shareText": "Присоединяйся ко мне в True Match! 💕",
+  "referral.approvedCount": "{count} друзей присоединились",
+  "referral.pendingCount": "{count} ожидают",
+  "referral.loading": "Загрузка...",
+  "referral.unavailable": "Ссылка пока недоступна. Попробуйте чуть позже.",
 
   "card.hintAuto": "Оплата картой — активируется автоматически",
   "card.instructions": "Переведите на карту ТОЧНО эту сумму. Как только платёж поступит, всё активируется автоматически.",

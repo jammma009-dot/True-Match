@@ -149,6 +149,7 @@
   "profile.contact": "Biz bilan bog'lanish",
   "profile.premium": "Premium sotib olish",
   "profile.present": "Sovg'a olish (Boost)",
+  "profile.referral": "Do'stlarni taklif qiling",
 
   "present.title": "Boost — tepaga chiqing",
   "present.subtitle": "3 kun davomida lentaning eng tepasida ko'rining.",
@@ -165,6 +166,20 @@
   "present.done": "Tayyor! Boost faollashtirildi 🚀",
   "present.error": "To'lovni amalga oshirib bo'lmadi. Qayta urinib ko'ring.",
   "present.activeTag": "Faol",
+
+  "referral.cardTitle": "Do'stlarni taklif qiling",
+  "referral.cardSubtitle": "Har bir do'st uchun +1 kun boost",
+  "referral.modalTitle": "Do'stlarni taklif qiling",
+  "referral.modalSubtitle": "Har bir taklif qilingan va tasdiqlangan do'stingiz uchun +1 kun Boost oling!",
+  "referral.linkLabel": "Sizning taklif havolangiz",
+  "referral.copy": "Nusxalash",
+  "referral.copied": "Nusxalandi!",
+  "referral.share": "Ulashish",
+  "referral.shareText": "Menga True Match'da qo'shiling! 💕",
+  "referral.approvedCount": "{count} ta do'st qo'shildi",
+  "referral.pendingCount": "{count} ta kutilmoqda",
+  "referral.loading": "Yuklanmoqda...",
+  "referral.unavailable": "Havola hozircha mavjud emas. Birozdan so'ng qayta urinib ko'ring.",
 
   "card.hintAuto": "Karta orqali to'lash — avtomatik faollashadi",
   "card.instructions": "Quyidagi kartaga ANIQ shu summani o'tkazing. To'lov kelib tushishi bilan avtomatik faollashadi.",

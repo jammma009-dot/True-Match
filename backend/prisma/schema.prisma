@@ -115,6 +115,15 @@ model User {
   lastSeenAt DateTime @default(now())
   // Last time the user opened their "Likes" page (for the new-likes badge).
   lastLikesSeenAt DateTime?
+  // ----- Referral program (NEW) -----
+  // The user who invited this user (captured from the /start ref_<code> deep
+  // link, only ever set once, at account creation).
+  referredById   String?
+  referredBy     User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals      User[]   @relation("Referrals")
+  // Whether the referrer has already been rewarded for THIS user's profile
+  // approval (prevents double-rewarding on re-approval after an edit/reject).
+  referralRewardGranted Boolean @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

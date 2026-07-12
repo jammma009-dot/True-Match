@@ -29,5 +29,7 @@
   "bot.present.title": "🎁 Sizga sovg'a!",
   "bot.present.body": "Kimdir sizga sovg'a yubordi — 3 kun davomida lentaning tepasida ko'rinasiz!",
   "bot.verified.title": "✅ Profilingiz tasdiqlandi!",
-  "bot.verified.body": "Tabriklaymiz! Endi ismingiz yonida ko'k tasdiq belgisi bor."
+  "bot.verified.body": "Tabriklaymiz! Endi ismingiz yonida ko'k tasdiq belgisi bor.",
+  "bot.referral.rewardedTitle": "🎉 Do'stingiz qo'shildi!",
+  "bot.referral.rewardedBody": "Siz taklif qilgan do'stingiz endi True Match'da! Sizga +1 kun Boost qo'shildi."
 }

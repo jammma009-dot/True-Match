@@ -303,6 +303,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ targetUserId }),
     }),
+
+  getReferralSummary: () =>
+    request<{ link: string | null; approvedCount: number; pendingCount: number }>(
+      "/api/referral/summary",
+    ),
 };
 
 /** Upload a file directly to R2 using a presigned PUT URL. */

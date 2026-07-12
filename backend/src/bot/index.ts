@@ -3,6 +3,7 @@ import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { t, Locale, normalizeLocale } from "../lib/locale";
 import { grantPremium, grantBoost } from "../services/entitlements";
+import { captureReferral } from "../referral/referral.service";
 
 /**
  * grammy bot instance. Handles the pre-Mini-App /start flow:
@@ -61,7 +62,17 @@ bot.command("start", async (ctx) => {
   const from = ctx.from;
   if (!from) return;
 
-  await ensureUser(from.id, from.language_code, from.username);
+  // Referrals are only captured at account creation — check BEFORE upserting.
+  const existedAlready = await prisma.user.findUnique({
+    where: { telegramId: BigInt(from.id) },
+    select: { id: true },
+  });
+
+  const user = await ensureUser(from.id, from.language_code, from.username);
+
+  if (!existedAlready) {
+    await captureReferral(user.id, BigInt(from.id), ctx.match).catch(() => undefined);
+  }
 
   await ctx.reply(t("uz", "bot.chooseLanguage"), {
     reply_markup: languageKeyboard(),
