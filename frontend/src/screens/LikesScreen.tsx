@@ -168,7 +168,7 @@ export function LikesScreen({
                           <MapPin className="h-3 w-3 shrink-0" /> {t(`city.${p.city}`)}
                         </p>
                       </div>
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-between">
                         <button
                           type="button"
                           onClick={() => passOnLiker(p)}
