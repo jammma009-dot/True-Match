@@ -157,18 +157,18 @@ export function LikesScreen({
                 )}
 
                 {/* Info */}
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/85 to-transparent p-3">
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 to-transparent p-3">
                   {unlocked ? (
                     <>
-                      <div>
-                        <p className="text-sm font-bold text-white">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">
                           {p.name}, {p.age}
                         </p>
                         <p className="flex items-center gap-1 text-xs text-white/75">
-                          <MapPin className="h-3 w-3" /> {t(`city.${p.city}`)}
+                          <MapPin className="h-3 w-3 shrink-0" /> {t(`city.${p.city}`)}
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-8">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => passOnLiker(p)}
