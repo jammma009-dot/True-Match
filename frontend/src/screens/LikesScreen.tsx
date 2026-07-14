@@ -144,27 +144,27 @@ export function LikesScreen({
 
                 {/* Center actions / lock */}
                 {unlocked ? (
-                  <div className="absolute inset-0 flex items-center justify-center gap-3">
+                  <div className="absolute inset-0 flex items-center justify-center gap-6">
                     <button
                       type="button"
                       onClick={() => passOnLiker(p)}
                       disabled={busy === p.userId}
                       aria-label={t("likes.pass")}
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur active:opacity-80 disabled:opacity-60"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur active:opacity-80 disabled:opacity-60"
                     >
-                      <X className="h-5 w-5 text-white" />
+                      <X className="h-4 w-4 text-white" />
                     </button>
                     <button
                       type="button"
                       onClick={() => likeBack(p)}
                       disabled={busy === p.userId}
                       aria-label={t("likes.likeBack")}
-                      className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/90 shadow-lg backdrop-blur active:opacity-80 disabled:opacity-60"
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/90 shadow-lg backdrop-blur active:opacity-80 disabled:opacity-60"
                     >
                       {busy === p.userId ? (
-                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       ) : (
-                        <MessageCircle className="h-6 w-6 text-white" />
+                        <MessageCircle className="h-5 w-5 text-white" />
                       )}
                     </button>
                   </div>
