@@ -1,0 +1,160 @@
+import { Router, Request, Response } from "express";
+import { z } from "zod";
+import { prisma } from "../lib/prisma";
+import { requireAuth } from "../middleware/auth";
+import { validateBody } from "../middleware/validate";
+import { bot } from "../bot";
+import { getSettings } from "../lib/settings";
+import {
+  DEFAULT_PRESENT_STARS,
+  BOOST_DAYS,
+  isProfileComplete,
+  stackedBoostUntil,
+  resolvePremiumPlans,
+  findPremiumPlan,
+} from "../lib/premium";
+
+const router = Router();
+
+/**
+ * POST /api/premium/invoice { days? }
+ * Creates a Telegram Stars invoice link for a Premium purchase and returns it.
+ * `days` selects one of the admin's configured plans (see GET /api/me
+ * settings.premiumPlans); if omitted or not a configured plan, the first
+ * plan is used. The Mini App opens the link via
+ * window.Telegram.WebApp.openInvoice(). Stars are credited to the bot; the
+ * successful_payment handler activates Premium for the plan's period.
+ */
+const invoiceSchema = z.object({ days: z.coerce.number().int().min(1).optional() });
+router.post(
+  "/invoice",
+  requireAuth,
+  validateBody(invoiceSchema),
+  async (req: Request, res: Response) => {
+    const user = req.authUser!;
+    const { days } = req.body as z.infer<typeof invoiceSchema>;
+    const settings = await getSettings();
+    const plans = resolvePremiumPlans(settings);
+    const plan = findPremiumPlan(plans, days);
+
+    try {
+      const link = await bot.api.createInvoiceLink(
+        "True Match Premium",
+        `Premium — ${plan.days} days of unlimited likes, priority, rewind and more.`,
+        // Internal payload used by the successful_payment handler.
+        `premium:${user.id}:${plan.days}`,
+        // Empty provider token = payment in Telegram Stars.
+        "",
+        "XTR",
+        [{ label: "True Match Premium", amount: plan.priceStars }],
+      );
+      res.json({ link });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[premium] createInvoiceLink failed:", err);
+      res.status(500).json({ error: "invoice_failed" });
+    }
+  },
+);
+
+/**
+ * POST /api/premium/boost/invoice { targetUserId }
+ * Creates a Telegram Stars invoice for a "present" (boost): 3 days on top of
+ * the feed. targetUserId may be the buyer (self-boost) or another user (gift).
+ * The successful_payment handler applies the boost (stacking) to the target.
+ */
+const boostSchema = z.object({ targetUserId: z.string().min(1) });
+router.post(
+  "/boost/invoice",
+  requireAuth,
+  validateBody(boostSchema),
+  async (req: Request, res: Response) => {
+    const user = req.authUser!;
+    const { targetUserId } = req.body as z.infer<typeof boostSchema>;
+
+    // Target must exist, have an approved profile, and not be banned.
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { profile: { select: { status: true } } },
+    });
+    if (!target || target.isBanned || target.profile?.status !== "approved") {
+      res.status(404).json({ error: "target_unavailable" });
+      return;
+    }
+
+    // Can't gift to someone blocked (either direction).
+    if (targetUserId !== user.id) {
+      const block = await prisma.block.findFirst({
+        where: {
+          OR: [
+            { blockerId: user.id, blockedId: targetUserId },
+            { blockerId: targetUserId, blockedId: user.id },
+          ],
+        },
+      });
+      if (block) {
+        res.status(403).json({ error: "blocked" });
+        return;
+      }
+    }
+
+    const settings = await getSettings();
+    const stars = settings.presentPriceStars ?? DEFAULT_PRESENT_STARS;
+    const isGift = targetUserId !== user.id;
+
+    try {
+      const link = await bot.api.createInvoiceLink(
+        isGift ? "True Match Present" : "True Match Boost",
+        isGift
+          ? `A present for ${target.profile ? "your match" : "a user"} — ${BOOST_DAYS} days on top of the feed.`
+          : `Boost — ${BOOST_DAYS} days on top of the feed so more people see you.`,
+        // payload: boost:<targetUserId>:<buyerUserId>
+        `boost:${targetUserId}:${user.id}`,
+        "",
+        "XTR",
+        [{ label: isGift ? "True Match Present" : "True Match Boost", amount: stars }],
+      );
+      res.json({ link });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[boost] createInvoiceLink failed:", err);
+      res.status(500).json({ error: "invoice_failed" });
+    }
+  },
+);
+
+/**
+ * POST /api/premium/free-boost
+ * One-time reward: a free 1-day boost for a 100%-complete profile.
+ */
+router.post("/free-boost", requireAuth, async (req: Request, res: Response) => {
+  const user = req.authUser!;
+
+  if (user.freeBoostClaimed) {
+    res.status(409).json({ error: "already_claimed" });
+    return;
+  }
+
+  const profile = await prisma.profile.findUnique({
+    where: { userId: user.id },
+    include: { photos: true },
+  });
+  if (!profile) {
+    res.status(404).json({ error: "profile_not_found" });
+    return;
+  }
+  if (!isProfileComplete(profile, profile.photos.length)) {
+    res.status(400).json({ error: "profile_incomplete" });
+    return;
+  }
+
+  const boostUntil = stackedBoostUntil(user.boostUntil, 1);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { boostUntil, freeBoostClaimed: true },
+  });
+
+  res.json({ ok: true, boostUntil: boostUntil.toISOString() });
+});
+
+export default router;

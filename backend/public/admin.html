@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>True Match — Admin</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; margin: 0; background: #0f0f12; color: #eee; }
+      header { padding: 16px 20px; background: #17171c; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #26262e; }
+      header h1 { font-size: 18px; margin: 0; }
+      .tabs { display: flex; gap: 8px; }
+      .tabs button { background: #26262e; color: #ccc; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+      .tabs button.active { background: #6d5efc; color: #fff; }
+      main { padding: 20px; max-width: 1000px; margin: 0 auto; }
+      .login { max-width: 320px; margin: 80px auto; text-align: center; }
+      input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #1c1c22; color: #fff; margin: 8px 0; }
+      button.primary { background: #6d5efc; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+      .card { background: #17171c; border: 1px solid #26262e; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      .photos { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+      .photos img { width: 90px; height: 120px; object-fit: cover; border-radius: 8px; background: #26262e; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .meta { color: #9a9aa5; font-size: 14px; }
+      .actions { margin-top: 12px; display: flex; gap: 8px; }
+      .btn-approve { background: #2ecc71; }
+      .btn-reject, .btn-ban { background: #e74c3c; }
+      .btn-dismiss { background: #555; }
+      .actions button { color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+      .empty { color: #777; padding: 40px; text-align: center; }
+      .tag { background: #26262e; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+      select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #1c1c22; color: #fff; margin: 6px 0; }
+      label { display: block; font-size: 13px; color: #9a9aa5; margin-top: 10px; }
+      .btn-edit { background: #3a7bd5; }
+      .btn-delete { background: #b71c1c; }
+      .btn-unban { background: #2ecc71; }
+      .badge-banned { background: #e74c3c; }
+      .badge-approved { background: #2ecc71; }
+      .badge-pending { background: #f39c12; }
+      .badge-rejected { background: #e74c3c; }
+      .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 50; }
+      .modal { background: #17171c; border: 1px solid #26262e; border-radius: 12px; padding: 20px; width: 92%; max-width: 420px; max-height: 90vh; overflow: auto; }
+      .modal h2 { margin: 0 0 12px; font-size: 18px; }
+      .searchbar { display: flex; gap: 8px; margin-bottom: 16px; }
+      .searchbar input { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="login" class="login">
+      <h1>True Match Admin</h1>
+      <input id="password" type="password" placeholder="Admin password" />
+      <button class="primary" onclick="login()">Enter</button>
+      <p id="loginError" style="color:#e74c3c"></p>
+    </div>
+
+    <div id="app" style="display:none">
+      <header>
+        <h1>True Match Admin</h1>
+        <div class="tabs">
+          <button id="tab-pending" class="active" onclick="showTab('pending')">Pending profiles</button>
+          <button id="tab-reports" onclick="showTab('reports')">Reports</button>
+          <button id="tab-users" onclick="showTab('users')">All users</button>
+          <button id="tab-verifications" onclick="showTab('verifications')">Verifications</button>
+          <button id="tab-cardorders" onclick="showTab('cardorders')">Card orders</button>
+          <button id="tab-settings" onclick="showTab('settings')">Settings</button>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="primary" style="background:#6d5efc" onclick="location.href='broadcast.html'">📢 Broadcast</button>
+          <button class="primary" style="background:#2ecc71" onclick="openAddUser()">+ Add user</button>
+          <button class="primary" onclick="logout()">Logout</button>
+        </div>
+      </header>
+      <main>
+        <div id="pending"></div>
+        <div id="reports" style="display:none"></div>
+        <div id="users" style="display:none"></div>
+        <div id="verifications" style="display:none"></div>
+        <div id="cardorders" style="display:none"></div>
+        <div id="settings" style="display:none"></div>
+      </main>
+    </div>
+
+    <!-- Edit user modal -->
+    <div id="editModal" class="modal-overlay" style="display:none">
+      <div class="modal">
+        <h2>Edit user</h2>
+        <input type="hidden" id="edit-userId" />
+        <label>Name</label>
+        <input id="edit-name" type="text" />
+        <label>Birthdate (YYYY-MM-DD)</label>
+        <input id="edit-birthdate" type="date" />
+        <label>Gender</label>
+        <select id="edit-gender">
+          <option value="male">male</option>
+          <option value="female">female</option>
+        </select>
+        <label>Looking for</label>
+        <select id="edit-intent">
+          <option value="serious">serious</option>
+          <option value="marriage">marriage</option>
+          <option value="flirt">flirt</option>
+          <option value="friendship">friendship</option>
+          <option value="unsure">unsure</option>
+        </select>
+        <label>City</label>
+        <select id="edit-city">
+          <option value="toshkent">Toshkent</option>
+          <option value="nukus">Nukus</option>
+          <option value="andijon">Andijon</option>
+          <option value="buxoro">Buxoro</option>
+          <option value="jizzax">Jizzax</option>
+          <option value="qarshi">Qarshi</option>
+          <option value="navoiy">Navoiy</option>
+          <option value="namangan">Namangan</option>
+          <option value="samarqand">Samarqand</option>
+          <option value="termiz">Termiz</option>
+          <option value="guliston">Guliston</option>
+          <option value="nurafshon">Nurafshon</option>
+          <option value="fargona">Farg'ona</option>
+          <option value="urganch">Urganch</option>
+        </select>
+        <label>Status</label>
+        <select id="edit-status">
+          <option value="pending">pending</option>
+          <option value="approved">approved</option>
+          <option value="rejected">rejected</option>
+        </select>
+        <div class="actions" style="margin-top:16px">
+          <button class="primary" onclick="saveUser()">Save</button>
+          <button class="btn-dismiss" style="color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer" onclick="closeEdit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add user modal -->
+    <div id="addUserModal" class="modal-overlay" style="display:none">
+      <div class="modal">
+        <h2>Add user manually</h2>
+        <p class="meta">Creates one approved profile with photos you upload now. Replaces the old sample-data tool.</p>
+        <label>Name</label>
+        <input id="au-name" type="text" placeholder="e.g. Malika" />
+        <label>Age</label>
+        <input id="au-age" type="number" min="18" max="90" placeholder="e.g. 24" />
+        <label>Gender</label>
+        <select id="au-gender">
+          <option value="female">female</option>
+          <option value="male">male</option>
+        </select>
+        <label>Looking for</label>
+        <select id="au-intent">
+          <option value="serious">serious</option>
+          <option value="marriage">marriage</option>
+          <option value="flirt">flirt</option>
+          <option value="friendship">friendship</option>
+          <option value="unsure">unsure</option>
+        </select>
+        <label>City</label>
+        <select id="au-city">
+          <option value="toshkent">Toshkent</option>
+          <option value="nukus">Nukus</option>
+          <option value="andijon">Andijon</option>
+          <option value="buxoro">Buxoro</option>
+          <option value="jizzax">Jizzax</option>
+          <option value="qarshi">Qarshi</option>
+          <option value="navoiy">Navoiy</option>
+          <option value="namangan">Namangan</option>
+          <option value="samarqand">Samarqand</option>
+          <option value="termiz">Termiz</option>
+          <option value="guliston">Guliston</option>
+          <option value="nurafshon">Nurafshon</option>
+          <option value="fargona">Farg'ona</option>
+          <option value="urganch">Urganch</option>
+        </select>
+        <label>Bio (optional)</label>
+        <input id="au-bio" type="text" placeholder="Short bio" />
+        <label>Height cm (optional)</label>
+        <input id="au-height" type="number" min="120" max="230" placeholder="e.g. 165" />
+        <label>Interests (optional, comma-separated)</label>
+        <input id="au-interests" type="text" placeholder="e.g. music, travel, sports" />
+        <label>Photos (1–6, first one is the main photo)</label>
+        <input id="au-photos" type="file" accept="image/*" multiple />
+        <div class="actions" style="margin-top:16px">
+          <button class="primary" onclick="submitAddUser()">Create user</button>
+          <button class="btn-dismiss" style="color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer" onclick="closeAddUser()">Cancel</button>
+        </div>
+        <p id="addUser-msg" class="meta" style="margin-top:10px"></p>
+      </div>
+    </div>
+
+    <script>
+      const API = ""; // same origin
+      let pw = localStorage.getItem("tm_admin_pw") || "";
+
+      function headers() {
+        return { "Authorization": "Bearer " + pw, "Content-Type": "application/json" };
+      }
+
+      async function api(path, opts = {}) {
+        const res = await fetch(API + path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+        if (res.status === 401) { logout(); throw new Error("unauthorized"); }
+        return res.json();
+      }
+
+      function login() {
+        pw = document.getElementById("password").value;
+        localStorage.setItem("tm_admin_pw", pw);
+        api("/api/admin/pending").then(() => { init(); }).catch(() => {
+          document.getElementById("loginError").textContent = "Wrong password";
+        });
+      }
+
+      function logout() {
+        localStorage.removeItem("tm_admin_pw"); pw = "";
+        document.getElementById("app").style.display = "none";
+        document.getElementById("login").style.display = "block";
+      }
+
+      const TABS = ["pending", "reports", "users", "verifications", "cardorders", "settings"];
+      function showTab(tab) {
+        TABS.forEach((t) => {
+          document.getElementById(t).style.display = t === tab ? "block" : "none";
+          document.getElementById("tab-" + t).classList.toggle("active", t === tab);
+        });
+        if (tab === "pending") loadPending();
+        else if (tab === "reports") loadReports();
+        else if (tab === "settings") loadSettings();
+        else if (tab === "verifications") loadVerifications();
+        else if (tab === "cardorders") loadCardOrders();
+        else loadUsers();
+      }
+
+      // ---------- Card orders tab ----------
+      let cardOrderStatus = "";
+      async function loadCardOrders() {
+        const el = document.getElementById("cardorders");
+        el.innerHTML = "Loading...";
+        const q = cardOrderStatus ? ("?status=" + encodeURIComponent(cardOrderStatus)) : "";
+        const data = await api("/api/admin/card-orders" + q);
+        const c = (data.summary && data.summary.counts) || {};
+        const kindLabel = { premium: "Premium", boost: "Boost", gift: "Gift" };
+        const fmt = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "—");
+        const filterBar = `
+          <div class="searchbar">
+            <select id="cardOrderStatusSel" onchange="cardOrderStatus=this.value;loadCardOrders()">
+              <option value="">All statuses</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="expired">Expired</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="card">
+            <div class="row">
+              <span class="tag badge-approved">Paid: ${c.paid || 0}</span>
+              <span class="tag badge-pending">Pending: ${c.pending || 0}</span>
+              <span class="tag">Expired: ${c.expired || 0}</span>
+              <span class="meta" style="margin-left:auto">Total received: <strong style="color:#2ecc71">${escapeHtml(String(data.summary.totalReceived))} so'm</strong></span>
+            </div>
+          </div>`;
+        const body = data.orders.length
+          ? data.orders.map((o) => {
+              const sc = o.status === "paid" ? "badge-approved" : o.status === "pending" ? "badge-pending" : "badge-rejected";
+              const gift = o.recipientName ? ` → 🎁 ${escapeHtml(o.recipientName)}` : "";
+              return `
+                <div class="card">
+                  <div class="row">
+                    <strong>${escapeHtml(o.amount)} so'm</strong>
+                    <span class="tag">${escapeHtml(kindLabel[o.kind] || o.kind)}</span>
+                    <span class="tag ${sc}">${escapeHtml(o.status)}</span>
+                  </div>
+                  <div class="meta" style="margin-top:6px">👤 ${escapeHtml(o.buyerName || "(no name)")}${gift}</div>
+                  <div class="meta" style="margin-top:2px">Created ${fmt(o.createdAt)}${o.paidAt ? " · Paid " + fmt(o.paidAt) : ""}</div>
+                </div>`;
+            }).join("")
+          : '<div class="empty">No card orders yet</div>';
+        el.innerHTML = filterBar + body;
+        const sel = document.getElementById("cardOrderStatusSel");
+        if (sel) sel.value = cardOrderStatus;
+      }
+
+      // ---------- Verifications tab ----------
+      async function loadVerifications() {
+        const el = document.getElementById("verifications");
+        el.innerHTML = "Loading...";
+        const data = await api("/api/admin/verifications");
+        const list = data.verifications || [];
+        if (!list.length) {
+          el.innerHTML = '<div class="empty">No pending verifications 🎉</div>';
+          return;
+        }
+        el.innerHTML = list.map((v) => `
+          <div class="card">
+            <div class="row"><strong>${escapeHtml(v.name)}</strong> <span class="meta">${v.age} y/o</span></div>
+            <p class="meta" style="margin:8px 0 4px">Verification selfie (should hold two fingers):</p>
+            <div class="photos">
+              <img src="${escapeHtml(v.verificationPhotoUrl || "")}" style="width:150px;height:200px" onerror="this.style.opacity=0.2"/>
+            </div>
+            <p class="meta" style="margin:8px 0 4px">Profile photos:</p>
+            <div class="photos">${v.photos.map(u => `<img src="${escapeHtml(u)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="actions">
+              <button class="btn-approve" onclick="decideVerify('${v.userId}', true)">Verify ✓</button>
+              <button class="btn-reject" onclick="decideVerify('${v.userId}', false)">Reject</button>
+            </div>
+          </div>`).join("");
+      }
+
+      async function decideVerify(userId, approve) {
+        const res = await api(`/api/admin/users/${userId}/verify`, { method: "POST", body: JSON.stringify({ approve }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadVerifications();
+      }
+
+      // ---------- Settings tab ----------
+      async function loadSettings() {
+        const el = document.getElementById("settings");
+        el.innerHTML = "Loading...";
+        const s = await api("/api/admin/settings");
+        el.innerHTML = `
+          <div class="card">
+            <h2 style="margin-top:0">Forwarding usernames</h2>
+            <p class="meta">Telegram usernames (without @) that users are sent to from the app.</p>
+            <label>Contact username — "Contact us" button</label>
+            <input id="set-contact" type="text" placeholder="e.g. truematch_support" value="${escapeHtml(s.contactUsername || "")}" />
+            <label>Payment username — "Pay via card" (Buy Premium)</label>
+            <input id="set-payment" type="text" placeholder="e.g. truematch_pay" value="${escapeHtml(s.paymentUsername || "")}" />
+
+            <h2 style="margin:22px 0 0">Premium plans (up to 4)</h2>
+            <p class="meta">
+              <b>How Stars work:</b> Star payments always go to the <b>bot's</b> balance —
+              Telegram cannot send them to a personal account. To cash out bot Stars you must
+              wait ~21 days, reach the minimum balance, then withdraw to TON via Fragment.
+              For money paid <b>directly to you</b>, use the "Pay via card" flow below.
+              Users will be offered a choice between these plans when buying Premium
+              (if only one is configured, they just see that single price).
+            </p>
+            <div id="premium-plans"></div>
+            <div class="row" style="margin-top:8px">
+              <button type="button" onclick="addPlanRow()">+ Add plan</button>
+            </div>
+            <label style="margin-top:16px">Present / Boost price (Telegram Stars ⭐) — 3 days on top of the feed; users can buy for themselves or gift it to others (stacks)</label>
+            <input id="set-present-price" type="number" min="1" step="1" placeholder="e.g. 100" value="${s.presentPriceStars ?? ""}" />
+            <label>Purchase notification ID — Telegram numeric ID that gets a "someone bought Premium" message (optional; does NOT receive the Stars)</label>
+            <input id="set-recipient" type="text" placeholder="e.g. 123456789 (numeric id) — notification only" value="${escapeHtml(s.starRecipient || "")}" />
+
+            <h2 style="margin:22px 0 0">Card payment (automatic — CardXabar)</h2>
+            <p class="meta">
+              Money paid <b>directly to your card</b>. When set, the app's "Pay via card" buttons
+              show this card number and an <b>exact amount</b> (with unique tiyin, e.g. 1000.<b>17</b>),
+              using the UZS price of whichever plan the user picked above.
+              The CardXabar userbot (running on <b>your</b> server/PC — NOT Railway) detects the transfer
+              and activates Premium/Boost automatically. Leave the card number empty to keep the old
+              "forward to a person" behavior.
+            </p>
+            <label>Card number (shown to users to transfer to)</label>
+            <input id="set-card-number" type="text" placeholder="e.g. 8600 1234 5678 1498" value="${escapeHtml(s.cardNumber || "")}" />
+            <label>Card holder name (optional, shown next to the number)</label>
+            <input id="set-card-holder" type="text" placeholder="e.g. FIRSTNAME LASTNAME" value="${escapeHtml(s.cardHolder || "")}" />
+            <label>Present / Boost price (so'm / UZS) — for card payments</label>
+            <input id="set-present-uzs" type="number" min="1" step="1" placeholder="e.g. 10000" value="${s.presentPriceUzs ?? ""}" />
+            <label>Webhook secret — the userbot sends this in the <code>X-Payment-Secret</code> header. Keep it private.</label>
+            <div class="row" style="gap:8px">
+              <input id="set-card-secret" type="text" placeholder="long random string" value="${escapeHtml(s.cardWebhookSecret || "")}" style="flex:1" />
+              <button type="button" onclick="genCardSecret()">Generate</button>
+            </div>
+
+            <div class="actions" style="margin-top:16px">
+              <button class="primary" onclick="saveSettings()">Save settings</button>
+            </div>
+            <p id="settings-msg" class="meta" style="margin-top:10px"></p>
+          </div>`;
+        renderPlanRows(s.premiumPlans && s.premiumPlans.length ? s.premiumPlans : [{ days: 30, priceStars: 250, priceUzs: 20000 }]);
+      }
+
+      const MAX_PREMIUM_PLANS = 4;
+      function renderPlanRows(plans) {
+        const el = document.getElementById("premium-plans");
+        el.innerHTML = plans.map((p, i) => planRowHtml(i, p)).join("");
+      }
+      function planRowHtml(i, p) {
+        p = p || {};
+        return `
+          <div class="row plan-row" data-i="${i}" style="gap:8px;align-items:flex-end;margin-top:8px;padding:10px;background:#1c1c22;border-radius:8px">
+            <div style="flex:1;min-width:80px">
+              <label style="margin-top:0">Days</label>
+              <input type="number" min="1" step="1" class="plan-days" value="${p.days ?? ""}" placeholder="e.g. 30" />
+            </div>
+            <div style="flex:1;min-width:90px">
+              <label style="margin-top:0">Price (Stars ⭐)</label>
+              <input type="number" min="1" step="1" class="plan-stars" value="${p.priceStars ?? ""}" placeholder="e.g. 250" />
+            </div>
+            <div style="flex:1;min-width:100px">
+              <label style="margin-top:0">Price (so'm)</label>
+              <input type="number" min="1" step="1" class="plan-uzs" value="${p.priceUzs ?? ""}" placeholder="e.g. 20000" />
+            </div>
+            <div style="flex:1;min-width:100px">
+              <label style="margin-top:0">Label (optional)</label>
+              <input type="text" class="plan-label" value="${escapeHtml(p.label || "")}" placeholder="e.g. Best value" />
+            </div>
+            <button type="button" class="btn-delete" style="color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer" onclick="removePlanRow(${i})">✕</button>
+          </div>`;
+      }
+      function collectPlanRows() {
+        return Array.from(document.querySelectorAll(".plan-row")).map((row) => ({
+          days: Number(row.querySelector(".plan-days").value),
+          priceStars: Number(row.querySelector(".plan-stars").value),
+          priceUzs: Number(row.querySelector(".plan-uzs").value),
+          label: row.querySelector(".plan-label").value.trim() || undefined,
+        }));
+      }
+      function addPlanRow() {
+        const plans = collectPlanRows();
+        if (plans.length >= MAX_PREMIUM_PLANS) { alert("Maximum " + MAX_PREMIUM_PLANS + " plans."); return; }
+        plans.push({});
+        renderPlanRows(plans);
+      }
+      function removePlanRow(i) {
+        const plans = collectPlanRows();
+        plans.splice(i, 1);
+        renderPlanRows(plans.length ? plans : [{}]);
+      }
+
+      function genCardSecret() {
+        // 32-byte random hex string, generated client-side.
+        const bytes = new Uint8Array(32);
+        (window.crypto || {}).getRandomValues?.(bytes);
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+        document.getElementById("set-card-secret").value = hex;
+      }
+
+      async function saveSettings() {
+        const presentPriceRaw = document.getElementById("set-present-price").value.trim();
+        const presentUzsRaw = document.getElementById("set-present-uzs").value.trim();
+        const plans = collectPlanRows().filter(
+          (p) => p.days > 0 && p.priceStars > 0 && p.priceUzs > 0,
+        );
+        if (!plans.length) { alert("Add at least one valid premium plan (days, stars, so'm all required)."); return; }
+        const body = {
+          contactUsername: document.getElementById("set-contact").value.trim(),
+          paymentUsername: document.getElementById("set-payment").value.trim(),
+          starRecipient: document.getElementById("set-recipient").value.trim(),
+          cardNumber: document.getElementById("set-card-number").value.trim(),
+          cardHolder: document.getElementById("set-card-holder").value.trim(),
+          cardWebhookSecret: document.getElementById("set-card-secret").value.trim(),
+          premiumPlans: plans,
+        };
+        if (presentPriceRaw) body.presentPriceStars = Number(presentPriceRaw);
+        if (presentUzsRaw) body.presentPriceUzs = Number(presentUzsRaw);
+        const res = await api("/api/admin/settings", { method: "POST", body: JSON.stringify(body) });
+        const msg = document.getElementById("settings-msg");
+        if (res.ok) {
+          msg.style.color = "#2ecc71";
+          msg.textContent = "Saved ✓";
+          document.getElementById("set-contact").value = res.contactUsername || "";
+          document.getElementById("set-payment").value = res.paymentUsername || "";
+          document.getElementById("set-present-price").value = res.presentPriceStars ?? "";
+          document.getElementById("set-recipient").value = res.starRecipient || "";
+          document.getElementById("set-card-number").value = res.cardNumber || "";
+          document.getElementById("set-card-holder").value = res.cardHolder || "";
+          document.getElementById("set-present-uzs").value = res.presentPriceUzs ?? "";
+          document.getElementById("set-card-secret").value = res.cardWebhookSecret || "";
+          renderPlanRows(res.premiumPlans && res.premiumPlans.length ? res.premiumPlans : [{}]);
+        } else {
+          msg.style.color = "#e74c3c";
+          msg.textContent = "Error: " + (res.error || "failed");
+        }
+      }
+
+      async function loadPending() {
+        const el = document.getElementById("pending");
+        el.innerHTML = "Loading...";
+        const { profiles } = await api("/api/admin/pending");
+        if (!profiles.length) { el.innerHTML = '<div class="empty">No pending profiles 🎉</div>'; return; }
+        el.innerHTML = profiles.map(p => `
+          <div class="card">
+            <div class="row"><strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span></div>
+            <div class="photos">${p.photos.map(u => `<img src="${escapeHtml(u)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="actions">
+              <button class="btn-approve" onclick="approve('${p.userId}')">Approve</button>
+              <button class="btn-reject" onclick="reject('${p.userId}')">Reject</button>
+            </div>
+          </div>`).join("");
+      }
+
+      async function approve(userId) {
+        await api(`/api/admin/profiles/${userId}/approve`, { method: "POST", body: "{}" });
+        loadPending();
+      }
+      async function reject(userId) {
+        const reason = prompt("Rejection reason (optional):") || "";
+        await api(`/api/admin/profiles/${userId}/reject`, { method: "POST", body: JSON.stringify({ reason }) });
+        loadPending();
+      }
+
+      async function loadReports() {
+        const el = document.getElementById("reports");
+        el.innerHTML = "Loading...";
+        const { reports } = await api("/api/admin/reports");
+        if (!reports.length) { el.innerHTML = '<div class="empty">No open reports 🎉</div>'; return; }
+        el.innerHTML = reports.map(r => `
+          <div class="card">
+            <div class="row"><strong>${escapeHtml(r.reportedUser.name || "(no profile)")}</strong> <span class="tag">${escapeHtml(r.reason)}</span> ${r.reportedUser.isBanned ? '<span class="tag" style="background:#e74c3c">BANNED</span>' : ""}</div>
+            ${r.note ? `<div class="meta">Note: ${escapeHtml(r.note)}</div>` : ""}
+            <div class="photos">${r.reportedUser.photos.map(u => `<img src="${escapeHtml(u)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>
+            <div class="actions">
+              <button class="btn-ban" onclick="ban('${r.reportedUser.userId}')">Ban user</button>
+              <button class="btn-dismiss" onclick="dismiss('${r.id}')">Dismiss</button>
+            </div>
+          </div>`).join("");
+      }
+
+      async function ban(userId) {
+        if (!confirm("Ban this user?")) return;
+        await api(`/api/admin/users/${userId}/ban`, { method: "POST", body: "{}" });
+        loadReports();
+      }
+      async function dismiss(id) {
+        await api(`/api/admin/reports/${id}/dismiss`, { method: "POST", body: "{}" });
+        loadReports();
+      }
+
+      // ---------- All users tab ----------
+      let usersCache = [];
+      let userSearch = "";
+
+      async function loadUsers() {
+        const el = document.getElementById("users");
+        el.innerHTML = "Loading...";
+        const query = userSearch ? ("?q=" + encodeURIComponent(userSearch)) : "";
+        const { users } = await api("/api/admin/users" + query);
+        usersCache = users;
+        const bar = `
+          <div class="searchbar">
+            <input id="userSearchInput" type="text" placeholder="Search by name..." value="${escapeHtml(userSearch)}" />
+            <button class="primary" onclick="doUserSearch()">Search</button>
+          </div>`;
+        if (!users.length) { el.innerHTML = bar + '<div class="empty">No users found</div>'; return; }
+        el.innerHTML = bar + users.map(renderUser).join("");
+      }
+
+      function doUserSearch() {
+        userSearch = document.getElementById("userSearchInput").value.trim();
+        loadUsers();
+      }
+
+      function renderUser(u) {
+        const p = u.profile;
+        const statusBadge = p
+          ? `<span class="tag badge-${p.status}">${p.status}</span>`
+          : '<span class="tag">no profile</span>';
+        const banned = u.isBanned ? '<span class="tag badge-banned">BANNED</span>' : "";
+        const premiumTag = u.isPremium
+          ? `<span class="tag" style="background:#e8a11c;color:#3a2600">⭐ PREMIUM${u.premiumUntil ? " until " + u.premiumUntil.slice(0, 10) : ""}</span>`
+          : "";
+        const boostTag = u.isBoosted
+          ? `<span class="tag" style="background:#3a7bd5;color:#fff">🚀 BOOST${u.boostUntil ? " until " + u.boostUntil.slice(0, 10) : ""}</span>`
+          : "";
+        const photos = p && p.photos.length
+          ? `<div class="photos">${p.photos.map(url => `<img src="${escapeHtml(url)}" onerror="this.style.opacity=0.2"/>`).join("")}</div>`
+          : "";
+        const info = p
+          ? `<strong>${escapeHtml(p.name)}</strong> <span class="meta">${p.age} y/o</span> <span class="tag">${p.gender}</span> <span class="tag">${escapeHtml(p.cityLabel)}</span> <span class="tag">${p.intent}</span> ${statusBadge} ${banned} ${premiumTag} ${boostTag}`
+          : `<strong class="meta">(no profile — only /start)</strong> ${banned} ${premiumTag} ${boostTag}`;
+        const banBtn = u.isBanned
+          ? `<button class="btn-unban" onclick="unbanUser('${u.userId}')">Unban</button>`
+          : `<button class="btn-ban" onclick="banUser('${u.userId}')">Ban</button>`;
+        const editBtn = p ? `<button class="btn-edit" onclick="openEdit('${u.userId}')">Edit</button>` : "";
+        const premiumBtn = u.isPremium
+          ? `<button style="background:#7a5a00" onclick="revokePremium('${u.userId}')">Revoke Premium</button>`
+          : `<button style="background:#e8a11c;color:#3a2600" onclick="grantPremium('${u.userId}')">Grant Premium</button>`;
+        const boostBtn = u.isBoosted
+          ? `<button style="background:#1f4a80" onclick="revokeBoost('${u.userId}')">Revoke Boost</button>`
+          : `<button style="background:#3a7bd5" onclick="grantBoost('${u.userId}')">Grant Boost</button>`;
+        return `
+          <div class="card">
+            <div class="row">${info}</div>
+            <div class="meta" style="margin-top:4px">Telegram ID: ${u.telegramId}</div>
+            ${photos}
+            <div class="actions">
+              ${editBtn}
+              ${premiumBtn}
+              ${boostBtn}
+              ${banBtn}
+              <button class="btn-delete" onclick="deleteUser('${u.userId}')">Delete</button>
+            </div>
+          </div>`;
+      }
+
+      function openEdit(userId) {
+        const u = usersCache.find(x => x.userId === userId);
+        if (!u || !u.profile) return;
+        const p = u.profile;
+        document.getElementById("edit-userId").value = userId;
+        document.getElementById("edit-name").value = p.name;
+        document.getElementById("edit-birthdate").value = p.birthdate;
+        document.getElementById("edit-gender").value = p.gender;
+        document.getElementById("edit-intent").value = p.intent;
+        document.getElementById("edit-city").value = p.city;
+        document.getElementById("edit-status").value = p.status;
+        document.getElementById("editModal").style.display = "flex";
+      }
+
+      function closeEdit() {
+        document.getElementById("editModal").style.display = "none";
+      }
+
+      async function saveUser() {
+        const userId = document.getElementById("edit-userId").value;
+        const body = {
+          name: document.getElementById("edit-name").value.trim(),
+          birthdate: document.getElementById("edit-birthdate").value,
+          gender: document.getElementById("edit-gender").value,
+          intent: document.getElementById("edit-intent").value,
+          city: document.getElementById("edit-city").value,
+          status: document.getElementById("edit-status").value,
+        };
+        const res = await api(`/api/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(body) });
+        if (res.error) { alert("Error: " + res.error + (res.minAge ? " (min age " + res.minAge + ")" : "")); return; }
+        closeEdit();
+        loadUsers();
+      }
+
+      async function banUser(userId) {
+        if (!confirm("Ban this user? They won't be able to use the app.")) return;
+        await api(`/api/admin/users/${userId}/ban`, { method: "POST", body: "{}" });
+        loadUsers();
+      }
+
+      async function grantPremium(userId) {
+        const input = prompt("Grant Premium for how many days? (e.g. 30)", "30");
+        if (input === null) return;
+        const days = Number(input);
+        if (!Number.isFinite(days) || days <= 0) { alert("Enter a positive number of days."); return; }
+        const res = await api(`/api/admin/users/${userId}/premium`, { method: "POST", body: JSON.stringify({ days }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
+      async function revokePremium(userId) {
+        if (!confirm("Revoke this user's Premium now?")) return;
+        const res = await api(`/api/admin/users/${userId}/premium`, { method: "POST", body: JSON.stringify({ days: 0 }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
+      async function grantBoost(userId) {
+        const input = prompt("Grant Boost for how many days? (each present = 3 days)", "3");
+        if (input === null) return;
+        const days = Number(input);
+        if (!Number.isFinite(days) || days <= 0) { alert("Enter a positive number of days."); return; }
+        const res = await api(`/api/admin/users/${userId}/boost`, { method: "POST", body: JSON.stringify({ days }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
+      async function revokeBoost(userId) {
+        if (!confirm("Revoke this user's Boost now?")) return;
+        const res = await api(`/api/admin/users/${userId}/boost`, { method: "POST", body: JSON.stringify({ days: 0 }) });
+        if (res.error) { alert("Error: " + res.error); return; }
+        loadUsers();
+      }
+
+      async function unbanUser(userId) {
+        await api(`/api/admin/users/${userId}/unban`, { method: "POST", body: "{}" });
+        loadUsers();
+      }
+      async function deleteUser(userId) {
+        if (!confirm("PERMANENTLY delete this user and all their data? This cannot be undone.")) return;
+        await api(`/api/admin/users/${userId}`, { method: "DELETE" });
+        loadUsers();
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+
+      function openAddUser() {
+        document.getElementById("au-name").value = "";
+        document.getElementById("au-age").value = "";
+        document.getElementById("au-gender").value = "female";
+        document.getElementById("au-intent").value = "serious";
+        document.getElementById("au-city").value = "toshkent";
+        document.getElementById("au-bio").value = "";
+        document.getElementById("au-height").value = "";
+        document.getElementById("au-interests").value = "";
+        document.getElementById("au-photos").value = "";
+        document.getElementById("addUser-msg").textContent = "";
+        document.getElementById("addUserModal").style.display = "flex";
+      }
+      function closeAddUser() {
+        document.getElementById("addUserModal").style.display = "none";
+      }
+      async function submitAddUser() {
+        const msg = document.getElementById("addUser-msg");
+        const name = document.getElementById("au-name").value.trim();
+        const age = document.getElementById("au-age").value.trim();
+        const files = document.getElementById("au-photos").files;
+        if (!name || !age) { msg.style.color = "#e74c3c"; msg.textContent = "Name and age are required."; return; }
+        if (!files.length) { msg.style.color = "#e74c3c"; msg.textContent = "Add at least one photo."; return; }
+        const fd = new FormData();
+        fd.append("name", name);
+        fd.append("age", age);
+        fd.append("gender", document.getElementById("au-gender").value);
+        fd.append("intent", document.getElementById("au-intent").value);
+        fd.append("city", document.getElementById("au-city").value);
+        fd.append("bio", document.getElementById("au-bio").value.trim());
+        const height = document.getElementById("au-height").value.trim();
+        if (height) fd.append("heightCm", height);
+        fd.append("interests", document.getElementById("au-interests").value.trim());
+        for (const f of files) fd.append("photos", f);
+
+        msg.style.color = "#9a9aa5";
+        msg.textContent = "Uploading...";
+        try {
+          const res = await fetch(API + "/api/admin/users/manual", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + pw }, // no Content-Type: let the browser set the multipart boundary
+            body: fd,
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            msg.style.color = "#e74c3c";
+            msg.textContent = "Error: " + (data.error || "failed");
+            return;
+          }
+          msg.style.color = "#2ecc71";
+          msg.textContent = "Created ✓";
+          setTimeout(() => { closeAddUser(); showTab("users"); document.getElementById("tab-users").click(); }, 400);
+        } catch (e) {
+          msg.style.color = "#e74c3c";
+          msg.textContent = "Error: " + e.message;
+        }
+      }
+
+      function init() {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        loadPending();
+      }
+
+      if (pw) { api("/api/admin/pending").then(init).catch(logout); }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<!-- skill:chrome -->
+<style>
+/* Credit line — bottom-right */
+.design-ui-credit {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  font: 11px/1 system-ui, sans-serif;
+  color: rgba(128,128,128,0.5);
+  pointer-events: none;
+  z-index: 2147483647;
+  transition: opacity 0.4s ease;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* Hide chrome on touch devices */
+@media (hover: none) {
+  .design-ui-credit { display: none; }
+}
+
+/* Print fixes */
+@media print {
+  * {
+    transition: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .design-ui-credit { display: none !important; }
+}
+
+</style>
+<script>
+(function () {
+    // Design-ui pages are single compositions, so the whole body is editable.
+    function markEditable() {
+        document.body.classList.add('artifact-editable');
+    }
+
+    // Credit badge with idle-fade. Hover devices only.
+    function initChromeUI() {
+        if (!matchMedia('(hover: hover)').matches) return;
+
+        var credit = document.createElement('div');
+        credit.className = 'design-ui-credit';
+        credit.setAttribute('aria-hidden', 'true');
+        credit.innerHTML = '\u{1F49C} by ClickUp Brain';
+        document.body.appendChild(credit);
+
+        var timer = null;
+        var fade = function (out) { credit.style.opacity = out ? '0' : ''; };
+        fade(true);
+        var show = function () {
+            fade(false);
+            clearTimeout(timer);
+            timer = setTimeout(function () { fade(true); }, 3000);
+        };
+        document.addEventListener('mousemove', show);
+        show();
+    }
+
+    function init() {
+        markEditable();
+        initChromeUI();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chrome -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>True Match — Broadcast</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; margin: 0; background: #0f0f12; color: #eee; }
+      header { padding: 16px 20px; background: #17171c; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #26262e; }
+      header h1 { font-size: 18px; margin: 0; }
+      header a { color: #9a9aa5; text-decoration: none; font-size: 14px; }
+      header a:hover { color: #fff; }
+      main { padding: 20px; max-width: 760px; margin: 0 auto; }
+      .login { max-width: 320px; margin: 80px auto; text-align: center; }
+      input, select, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #1c1c22; color: #fff; margin: 6px 0; font-family: inherit; font-size: 14px; }
+      textarea { min-height: 90px; resize: vertical; }
+      button.primary { background: #6d5efc; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+      button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+      .card { background: #17171c; border: 1px solid #26262e; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      label { display: block; font-size: 13px; color: #9a9aa5; margin-top: 10px; }
+      .hint { font-size: 12px; color: #777; margin-top: 4px; }
+      .actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .tag { background: #26262e; padding: 3px 10px; border-radius: 6px; font-size: 13px; }
+      .count-pill { background: #26262e; padding: 6px 14px; border-radius: 20px; font-size: 14px; }
+      .progress-wrap { background: #26262e; border-radius: 8px; height: 10px; overflow: hidden; margin-top: 10px; }
+      .progress-bar { background: #6d5efc; height: 100%; width: 0%; transition: width .2s; }
+      .stats { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: #9a9aa5; flex-wrap: wrap; }
+      .stats b { color: #eee; }
+      .warn { color: #f39c12; font-size: 13px; margin-top: 8px; }
+      h2 { font-size: 16px; margin: 0 0 4px; }
+      .sub { color: #9a9aa5; font-size: 13px; margin: 0 0 14px; }
+      .breakdown { margin-top: 12px; font-size: 13px; color: #9a9aa5; display: none; }
+      .breakdown h3 { font-size: 13px; color: #eee; margin: 0 0 6px; }
+      .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+      .chip { background: #26262e; padding: 4px 10px; border-radius: 6px; font-size: 12px; }
+      .chip b { color: #eee; }
+      .chip.zero { opacity: 0.4; }
+      .chip.blocked b { color: #e57373; }
+      .chip.markdown b { color: #f39c12; }
+      .chip.rate b { color: #64b5f6; }
+      .chip.other b { color: #ba9ff2; }
+      .last-error { margin-top: 8px; font-size: 12px; color: #777; word-break: break-word; }
+    </style>
+  </head>
+  <body>
+    <div id="login" class="login">
+      <h1>True Match Admin</h1>
+      <input id="password" type="password" placeholder="Admin password" />
+      <button class="primary" onclick="login()">Enter</button>
+      <p id="loginError" style="color:#e74c3c"></p>
+    </div>
+
+    <div id="app" style="display:none">
+      <header>
+        <h1>📢 Broadcast</h1>
+        <a href="admin.html">← Back to Admin panel</a>
+        <div style="margin-left:auto">
+          <button class="primary" style="background:#555" onclick="logout()">Logout</button>
+        </div>
+      </header>
+      <main>
+        <div class="card">
+          <h2>Send to</h2>
+          <p class="sub">Send to a filtered audience, or pick exactly one user.</p>
+          <div class="grid">
+            <div>
+              <label>Target mode</label>
+              <select id="targetMode" onchange="onTargetModeChange()">
+                <option value="filters">Filtered audience</option>
+                <option value="single">Single user</option>
+              </select>
+            </div>
+          </div>
+          <div id="singleUserPicker" style="display:none">
+            <label>Search by name / Telegram ID</label>
+            <div class="grid" style="grid-template-columns: 1fr auto">
+              <input id="su-search" type="text" placeholder="Type a name..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchSingleUser();}" />
+              <button class="primary" style="background:#3a7bd5" onclick="searchSingleUser()">Search</button>
+            </div>
+            <div id="su-results"></div>
+            <div id="su-selected" class="tag" style="display:none;margin-top:8px"></div>
+          </div>
+        </div>
+
+        <div class="card" id="filtersCard">
+          <h2>Audience</h2>
+          <p class="sub">Choose who receives this message.</p>
+          <div class="grid">
+            <div>
+              <label>Gender</label>
+              <select id="f-gender">
+                <option value="all">All</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label>Premium</label>
+              <select id="f-premium">
+                <option value="all">All</option>
+                <option value="premium">Premium only</option>
+                <option value="free">Free (non-premium) only</option>
+              </select>
+            </div>
+            <div>
+              <label>Profile status</label>
+              <select id="f-status">
+                <option value="all">All</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label>Language</label>
+              <select id="f-language">
+                <option value="all">All</option>
+                <option value="uz">O'zbek (uz)</option>
+                <option value="ru">Русский (ru)</option>
+              </select>
+            </div>
+            <div>
+              <label>City</label>
+              <select id="f-city">
+                <option value="all">All cities</option>
+                <option value="toshkent">Toshkent</option>
+                <option value="nukus">Nukus</option>
+                <option value="andijon">Andijon</option>
+                <option value="buxoro">Buxoro</option>
+                <option value="jizzax">Jizzax</option>
+                <option value="qarshi">Qarshi</option>
+                <option value="navoiy">Navoiy</option>
+                <option value="namangan">Namangan</option>
+                <option value="samarqand">Samarqand</option>
+                <option value="termiz">Termiz</option>
+                <option value="guliston">Guliston</option>
+                <option value="nurafshon">Nurafshon</option>
+                <option value="fargona">Farg'ona</option>
+                <option value="urganch">Urganch</option>
+              </select>
+            </div>
+            <div>
+              <label>Account status</label>
+              <select id="f-banned">
+                <option value="exclude">Exclude banned (recommended)</option>
+                <option value="all">All (incl. banned)</option>
+                <option value="only">Banned only</option>
+              </select>
+            </div>
+          </div>
+          <label>Has profile?</label>
+          <select id="f-hasProfile">
+            <option value="all">Doesn't matter</option>
+            <option value="yes">Only users with a profile</option>
+            <option value="no">Only /start-only users (no profile yet)</option>
+          </select>
+
+          <div class="actions">
+            <button class="primary" style="background:#3a7bd5" onclick="previewAudience()">Preview audience size</button>
+            <span id="countPill" class="count-pill" style="display:none"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Message</h2>
+          <p class="sub">
+            Each user gets the message in their own saved bot language, plus a
+            <b>"True Match'ni ochish" / "Открыть True Match"</b> button that opens the Mini App —
+            just like the /start welcome message. Fill in at least one language;
+            if the other is left blank, that language's users get this same text.
+          </p>
+          <label>Message — O'zbek (uz)</label>
+          <textarea id="msg-uz" placeholder="Masalan: 🎉 Bugun barcha uchun Premium 50% chegirma bilan!"></textarea>
+          <label>Message — Русский (ru)</label>
+          <textarea id="msg-ru" placeholder="Например: 🎉 Сегодня Premium со скидкой 50% для всех!"></textarea>
+          <p class="hint">Markdown is supported (e.g. *bold*, _italic_). If your text has stray *, _, [ or `, the send auto-retries as plain text so it never fails.</p>
+
+          <label>Attach a photo or video (optional)</label>
+          <input id="msg-media-file" type="file" accept="image/*,video/*" onchange="uploadMedia('msg-media-file','msg-media-status',(m)=>{currentMedia=m})" />
+          <p class="hint" id="msg-media-status"></p>
+          <p class="hint">When a photo/video is attached, Telegram shows your text as its caption (max ~1024 characters — keep it short).</p>
+
+          <div class="actions">
+            <button class="primary" id="sendBtn" onclick="sendBroadcast()">Send broadcast</button>
+          </div>
+          <div class="warn">This sends real Telegram messages immediately once confirmed. There is no undo.</div>
+        </div>
+
+        <div class="card" id="progressCard" style="display:none">
+          <h2>Sending…</h2>
+          <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+          <div class="stats">
+            <span>Total: <b id="statTotal">0</b></span>
+            <span>Sent: <b id="statSent">0</b></span>
+            <span>Failed: <b id="statFailed">0</b></span>
+            <span>Skipped (no text for their language): <b id="statSkipped">0</b></span>
+            <span>Status: <b id="statStatus">running</b></span>
+          </div>
+
+          <div class="breakdown" id="breakdown">
+            <h3>Failure breakdown</h3>
+            <div class="chips">
+              <span class="chip blocked zero" id="chipBlocked">Blocked / deleted: <b id="errBlocked">0</b></span>
+              <span class="chip markdown zero" id="chipMarkdown">Bad Markdown (sent as plain text): <b id="errMarkdown">0</b></span>
+              <span class="chip rate zero" id="chipRate">Rate limited: <b id="errRate">0</b></span>
+              <span class="chip other zero" id="chipOther">Other: <b id="errOther">0</b></span>
+            </div>
+            <div class="last-error" id="lastErrorRow" style="display:none">Most recent error: <span id="lastError"></span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🕒 Autopilot — send automatically every day</h2>
+          <p class="sub">Fires once a day at the chosen hour (Tashkent time) to the audience below. Runs even if nobody opens this page — as long as the server is up.</p>
+
+          <div class="grid">
+            <div>
+              <label>Enabled</label>
+              <select id="ap-enabled">
+                <option value="false">Off</option>
+                <option value="true">On</option>
+              </select>
+            </div>
+            <div>
+              <label>Hour of day (Tashkent time)</label>
+              <select id="ap-hour"></select>
+            </div>
+          </div>
+
+          <p class="sub" style="margin-top:14px">Audience</p>
+          <div class="grid">
+            <div>
+              <label>Gender</label>
+              <select id="ap-f-gender">
+                <option value="all">All</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label>Premium</label>
+              <select id="ap-f-premium">
+                <option value="all">All</option>
+                <option value="premium">Premium only</option>
+                <option value="free">Free (non-premium) only</option>
+              </select>
+            </div>
+            <div>
+              <label>Language</label>
+              <select id="ap-f-language">
+                <option value="all">All</option>
+                <option value="uz">O'zbek (uz)</option>
+                <option value="ru">Русский (ru)</option>
+              </select>
+            </div>
+            <div>
+              <label>Has profile?</label>
+              <select id="ap-f-hasProfile">
+                <option value="all">Doesn't matter</option>
+                <option value="yes">Only users with a profile</option>
+                <option value="no">Only /start-only users</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Message — O'zbek (uz)</label>
+          <textarea id="ap-msg-uz" placeholder="Masalan: 🎉 Har kuni yangi profillarni ko'ring!"></textarea>
+          <label>Message — Русский (ru)</label>
+          <textarea id="ap-msg-ru" placeholder="Например: 🎉 Каждый день новые анкеты!"></textarea>
+
+          <label>Attach a photo or video (optional)</label>
+          <input id="ap-media-file" type="file" accept="image/*,video/*" onchange="uploadMedia('ap-media-file','ap-media-status',(m)=>{apMedia=m})" />
+          <p class="hint" id="ap-media-status"></p>
+
+          <div class="actions">
+            <button class="primary" onclick="saveAutopilot()">Save autopilot settings</button>
+            <span id="ap-status" class="hint"></span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const API = ""; // same origin
+      let pw = localStorage.getItem("tm_admin_pw") || "";
+
+      function headers() {
+        return { "Authorization": "Bearer " + pw, "Content-Type": "application/json" };
+      }
+
+      async function api(path, opts = {}) {
+        const res = await fetch(API + path, { ...opts, headers: { ...headers(), ...(opts.headers || {}) } });
+        if (res.status === 401) { logout(); throw new Error("unauthorized"); }
+        return res.json();
+      }
+
+      function login() {
+        pw = document.getElementById("password").value;
+        localStorage.setItem("tm_admin_pw", pw);
+        api("/api/admin/pending").then(() => { init(); }).catch(() => {
+          document.getElementById("loginError").textContent = "Wrong password";
+        });
+      }
+
+      function logout() {
+        localStorage.removeItem("tm_admin_pw"); pw = "";
+        document.getElementById("app").style.display = "none";
+        document.getElementById("login").style.display = "block";
+      }
+
+      function init() {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        populateHourSelect();
+        loadAutopilot();
+      }
+
+      function populateHourSelect() {
+        const sel = document.getElementById("ap-hour");
+        sel.innerHTML = Array.from({ length: 24 }, (_, h) =>
+          `<option value="${h}">${String(h).padStart(2, "0")}:00</option>`
+        ).join("");
+      }
+
+      // ---------- Target mode: filtered audience vs single user ----------
+      let selectedUserId = null;
+      function onTargetModeChange() {
+        const single = document.getElementById("targetMode").value === "single";
+        document.getElementById("singleUserPicker").style.display = single ? "block" : "none";
+        document.getElementById("filtersCard").style.display = single ? "none" : "block";
+      }
+
+      async function searchSingleUser() {
+        const q = document.getElementById("su-search").value.trim();
+        const resultsEl = document.getElementById("su-results");
+        resultsEl.innerHTML = "Searching...";
+        const query = q ? ("?q=" + encodeURIComponent(q)) : "";
+        const { users } = await api("/api/admin/users" + query);
+        if (!users || !users.length) { resultsEl.innerHTML = '<p class="hint">No users found.</p>'; return; }
+        resultsEl.innerHTML = users.slice(0, 20).map((u) => {
+          const name = u.profile ? u.profile.name : "(no profile)";
+          const label = `${name} — tg:${u.telegramId}`;
+          return `<div class="tag" style="display:block;margin-top:6px;cursor:pointer" onclick='selectSingleUser("${u.userId}", ${JSON.stringify(label)})'>${escapeHtmlBc(label)}</div>`;
+        }).join("");
+      }
+
+      function selectSingleUser(userId, label) {
+        selectedUserId = userId;
+        const el = document.getElementById("su-selected");
+        el.style.display = "inline-block";
+        el.textContent = "Selected: " + label;
+        document.getElementById("su-results").innerHTML = "";
+      }
+
+      function escapeHtmlBc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+
+      // ---------- Media upload (shared by manual send + autopilot) ----------
+      let currentMedia = null; // { url, type } for the manual "send now" form
+      let apMedia = null;      // { url, type } for the autopilot form
+
+      async function uploadMedia(inputId, statusId, onDone) {
+        const input = document.getElementById(inputId);
+        const statusEl = document.getElementById(statusId);
+        const file = input.files[0];
+        if (!file) { onDone(null); statusEl.textContent = ""; return; }
+        statusEl.textContent = "Uploading " + file.name + "...";
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          const res = await fetch(API + "/api/broadcast/media", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + pw },
+            body: fd,
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            statusEl.textContent = "Upload failed: " + (data.error || "error");
+            onDone(null);
+            return;
+          }
+          statusEl.textContent = "Attached: " + file.name + " (" + data.type + ") ✓";
+          onDone({ url: data.url, type: data.type });
+        } catch (e) {
+          statusEl.textContent = "Upload failed: " + e.message;
+          onDone(null);
+        }
+      }
+
+      function currentFilters() {
+        return {
+          gender: document.getElementById("f-gender").value,
+          premium: document.getElementById("f-premium").value,
+          status: document.getElementById("f-status").value,
+          language: document.getElementById("f-language").value,
+          city: document.getElementById("f-city").value,
+          banned: document.getElementById("f-banned").value,
+          hasProfile: document.getElementById("f-hasProfile").value,
+        };
+      }
+
+      function effectiveFilters() {
+        if (document.getElementById("targetMode").value === "single") {
+          if (!selectedUserId) { alert("Pick a user first."); return null; }
+          return { targetUserId: selectedUserId };
+        }
+        return currentFilters();
+      }
+
+      async function previewAudience() {
+        const pill = document.getElementById("countPill");
+        const filters = effectiveFilters();
+        if (!filters) return;
+        pill.style.display = "inline-block";
+        pill.textContent = "Counting…";
+        try {
+          const res = await api("/api/broadcast/count", {
+            method: "POST",
+            body: JSON.stringify({ filters }),
+          });
+          if (res.error) { pill.textContent = "Error: " + res.error; return; }
+          pill.textContent = res.count + " recipient(s) match these filters";
+        } catch (e) {
+          pill.textContent = "Error counting audience";
+        }
+      }
+
+      let pollTimer = null;
+
+      async function sendBroadcast() {
+        const uz = document.getElementById("msg-uz").value.trim();
+        const ru = document.getElementById("msg-ru").value.trim();
+        if (!uz && !ru) { alert("Write a message in at least one language."); return; }
+
+        const filters = effectiveFilters();
+        if (!filters) return;
+        const countRes = await api("/api/broadcast/count", {
+          method: "POST",
+          body: JSON.stringify({ filters }),
+        });
+        const count = countRes.count ?? 0;
+        if (count === 0) { alert("No users match these filters."); return; }
+        if (!confirm(`Send this message to ${count} user(s)? This cannot be undone.`)) return;
+
+        document.getElementById("sendBtn").disabled = true;
+        const res = await api("/api/broadcast/send", {
+          method: "POST",
+          body: JSON.stringify({ filters, messages: { uz, ru }, media: currentMedia || undefined }),
+        });
+        if (res.error) {
+          alert("Error: " + res.error);
+          document.getElementById("sendBtn").disabled = false;
+          return;
+        }
+
+        document.getElementById("progressCard").style.display = "block";
+        document.getElementById("statTotal").textContent = res.total;
+        pollStatus(res.jobId);
+      }
+
+      // ---------- Autopilot ----------
+      async function loadAutopilot() {
+        const res = await api("/api/broadcast/autopilot");
+        if (res.error) return;
+        document.getElementById("ap-enabled").value = String(!!res.enabled);
+        document.getElementById("ap-hour").value = String(res.hour ?? 9);
+        document.getElementById("ap-msg-uz").value = (res.messages && res.messages.uz) || "";
+        document.getElementById("ap-msg-ru").value = (res.messages && res.messages.ru) || "";
+        const f = res.filters || {};
+        document.getElementById("ap-f-gender").value = f.gender || "all";
+        document.getElementById("ap-f-premium").value = f.premium || "all";
+        document.getElementById("ap-f-language").value = f.language || "all";
+        document.getElementById("ap-f-hasProfile").value = f.hasProfile || "all";
+        apMedia = res.media || null;
+        document.getElementById("ap-media-status").textContent = apMedia ? "Attached (" + apMedia.type + ") ✓" : "";
+        const statusEl = document.getElementById("ap-status");
+        statusEl.textContent = res.lastRunDate ? ("Last sent: " + res.lastRunDate + " (Tashkent)") : "Never sent yet";
+      }
+
+      async function saveAutopilot() {
+        const uz = document.getElementById("ap-msg-uz").value.trim();
+        const ru = document.getElementById("ap-msg-ru").value.trim();
+        const enabled = document.getElementById("ap-enabled").value === "true";
+        if (enabled && !uz && !ru) { alert("Write a message in at least one language before enabling autopilot."); return; }
+        const body = {
+          enabled,
+          hour: Number(document.getElementById("ap-hour").value),
+          filters: {
+            gender: document.getElementById("ap-f-gender").value,
+            premium: document.getElementById("ap-f-premium").value,
+            language: document.getElementById("ap-f-language").value,
+            hasProfile: document.getElementById("ap-f-hasProfile").value,
+            banned: "exclude",
+          },
+          messages: { uz, ru },
+          media: apMedia || undefined,
+        };
+        const res = await api("/api/broadcast/autopilot", { method: "POST", body: JSON.stringify(body) });
+        const statusEl = document.getElementById("ap-status");
+        if (res.error) { statusEl.textContent = "Error: " + res.error; return; }
+        statusEl.textContent = "Saved ✓ " + (res.enabled ? ("will send daily at " + String(res.hour).padStart(2, "0") + ":00 Tashkent time") : "(currently off)");
+      }
+
+      function setChip(chipId, valId, count) {
+        document.getElementById(valId).textContent = count;
+        document.getElementById(chipId).classList.toggle("zero", !count);
+      }
+
+      function pollStatus(jobId) {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(async () => {
+          const res = await api("/api/broadcast/status/" + jobId);
+          if (res.error) { clearInterval(pollTimer); return; }
+          const job = res.job;
+          const done = job.sent + job.failed + job.skipped;
+          const pct = job.total > 0 ? Math.round((done / job.total) * 100) : 100;
+          document.getElementById("progressBar").style.width = pct + "%";
+          document.getElementById("statTotal").textContent = job.total;
+          document.getElementById("statSent").textContent = job.sent;
+          document.getElementById("statFailed").textContent = job.failed;
+          document.getElementById("statSkipped").textContent = job.skipped;
+          document.getElementById("statStatus").textContent = job.status;
+
+          const e = job.errors || {};
+          const anyError =
+            (e.blocked || 0) + (e.invalidMarkdownRetried || 0) +
+            (e.rateLimited || 0) + (e.other || 0) > 0;
+          document.getElementById("breakdown").style.display = anyError ? "block" : "none";
+          setChip("chipBlocked", "errBlocked", e.blocked || 0);
+          setChip("chipMarkdown", "errMarkdown", e.invalidMarkdownRetried || 0);
+          setChip("chipRate", "errRate", e.rateLimited || 0);
+          setChip("chipOther", "errOther", e.other || 0);
+
+          if (job.lastError) {
+            document.getElementById("lastErrorRow").style.display = "block";
+            document.getElementById("lastError").textContent = job.lastError;
+          }
+
+          if (job.status === "done") {
+            clearInterval(pollTimer);
+            document.getElementById("sendBtn").disabled = false;
+          }
+        }, 1200);
+      }
+
+      if (pw) { api("/api/admin/pending").then(init).catch(logout); }
+    </script>
+  </body>
+</html>

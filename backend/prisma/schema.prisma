@@ -1,0 +1,367 @@
+// True Match — Prisma schema
+// Postgres via Railway. Simple, MVP-focused model.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Language {
+  uz
+  ru
+}
+
+enum Gender {
+  male
+  female
+}
+
+// Who the user wants to meet (their interest / intent)
+enum Intent {
+  serious // Jiddiy munosabatlar
+  marriage // Nikoh va oila
+  flirt // Flirt va uchrashuvlar
+  friendship // Muloqot va do'stlik
+  unsure // Hali aniqlanmaganman
+}
+
+enum ProfileStatus {
+  pending
+  approved
+  rejected
+}
+
+// Uzbekistan cities. Stored as enum for MVP; easy to extend later
+// or migrate to a lookup table with regions.
+enum City {
+  toshkent
+  nukus
+  andijon
+  buxoro
+  jizzax
+  qarshi
+  navoiy
+  namangan
+  samarqand
+  termiz
+  guliston
+  nurafshon
+  fargona
+  urganch
+}
+
+enum SwipeAction {
+  like
+  pass
+}
+
+// What a card payment buys.
+enum CardOrderKind {
+  premium
+  boost // self-boost
+  gift // boost gifted to another user
+}
+
+// Lifecycle of a card payment order.
+enum CardOrderStatus {
+  pending // waiting for the transfer to arrive
+  paid // matched by the CardXabar userbot and entitlement granted
+  expired // transfer window elapsed with no match
+  cancelled
+}
+
+// Lifestyle frequency (smoking / drinking)
+enum Habit {
+  never
+  sometimes
+  often
+}
+
+// Photo-verification (selfie) review state. Independent of profile approval —
+// the user can keep using the app while verification is pending.
+enum VerificationStatus {
+  none
+  pending
+  verified
+  rejected
+}
+
+// ---------- Models ----------
+
+model User {
+  id         String   @id @default(cuid())
+  telegramId BigInt   @unique
+  // Telegram @username (without @), captured from initData / bot. Used by the
+  // Premium "Open in Telegram" feature. May be null if the user has none.
+  username   String?
+  language   Language @default(uz)
+  isBanned   Boolean  @default(false)
+  // Premium subscription (bought via Telegram Stars or card). Active while
+  // premiumUntil is in the future.
+  premiumUntil DateTime?
+  // Temporary "boost" (present) — ranks the user at the top of discovery while
+  // in the future. Gifting/buying more stacks (adds days on top of remaining).
+  boostUntil DateTime?
+  // One-time reward: a free 1-day boost for completing the profile 100%.
+  freeBoostClaimed Boolean @default(false)
+  // Whether the user currently has the Mini App open (for chat notification routing)
+  isOnline   Boolean  @default(false)
+  lastSeenAt DateTime @default(now())
+  // Last time the user opened their "Likes" page (for the new-likes badge).
+  lastLikesSeenAt DateTime?
+  // ----- Referral program (NEW) -----
+  // The user who invited this user (captured from the /start ref_<code> deep
+  // link, only ever set once, at account creation).
+  referredById   String?
+  referredBy     User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals      User[]   @relation("Referrals")
+  // Whether the referrer has already been rewarded for THIS user's profile
+  // approval (prevents double-rewarding on re-approval after an edit/reject).
+  referralRewardGranted Boolean @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profile         Profile?
+  swipesGiven     Swipe[]   @relation("SwipeFrom")
+  swipesReceived  Swipe[]   @relation("SwipeTo")
+  matchesA        Match[]   @relation("MatchUserA")
+  matchesB        Match[]   @relation("MatchUserB")
+  messagesSent    Message[] @relation("MessageSender")
+  reportsMade     Report[]  @relation("Reporter")
+  reportsAgainst  Report[]  @relation("Reported")
+  blocksMade      Block[]   @relation("Blocker")
+  blocksAgainst   Block[]   @relation("Blocked")
+  cardOrders      CardOrder[] @relation("CardOrderBuyer")
+}
+
+model Profile {
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  birthdate DateTime // Full date stored; only age exposed to other users
+  gender    Gender
+  intent    Intent
+  city      City          @default(toshkent)
+  status    ProfileStatus @default(pending)
+  // Reason shown to the user if rejected (optional)
+  rejectionReason String?
+  // Locks gender edits once approved
+  genderLocked Boolean @default(false)
+
+  // Extended dating-profile info (all optional, editable any time)
+  bio       String?
+  heightCm  Int?
+  smoking   Habit?
+  drinking  Habit?
+  interests String[] @default([])
+  // Whether the user studies / works (toggle). The *Place fields are the
+  // optional free-text ("Universitetda" / "Zavodda").
+  studies   Boolean  @default(false)
+  works     Boolean  @default(false)
+  education String?
+  work      String?
+
+  // Photo verification (selfie holding two fingers), reviewed by an admin.
+  verificationStatus   VerificationStatus @default(none)
+  verificationPhotoUrl String?
+  verificationKey      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos Photo[]
+
+  @@index([status, city, gender])
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  // Object key in the R2 bucket
+  key       String
+  // Public URL (built from R2 public base + key)
+  url       String
+  position  Int      @default(0)
+  // TODO: automated photo moderation would set an approval flag here later
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
+}
+
+model Swipe {
+  id         String      @id @default(cuid())
+  fromUserId String
+  fromUser   User        @relation("SwipeFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User        @relation("SwipeTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  action     SwipeAction
+  createdAt  DateTime    @default(now())
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, action])
+  // Speeds up the per-day free-like cap count (fromUserId + action + createdAt).
+  @@index([fromUserId, action, createdAt])
+}
+
+model Match {
+  id        String    @id @default(cuid())
+  // userAId < userBId lexicographically to keep pairs unique & unordered
+  userAId   String
+  userA     User      @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     User      @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  // Whether each user has seen the "new match" celebration yet.
+  seenA     Boolean   @default(false)
+  seenB     Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  // True for the special "sent you a gift" first message (rendered highlighted).
+  isGift    Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([matchId, createdAt])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String
+  reportedUser   User     @relation("Reported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reason         String
+  note           String?
+  resolved       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([resolved])
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  blockerId   String
+  blocker     User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId   String
+  blocked     User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// A card-to-card payment order. The user is shown a card number and an EXACT
+// amount whose last two digits (tiyin) are unique per pending order. When the
+// CardXabar userbot reports an incoming transfer of that exact amount, we match
+// it to this order and grant the entitlement automatically — no bank
+// requisites or legal entity required.
+model CardOrder {
+  id           String          @id @default(cuid())
+  kind         CardOrderKind
+  // Buyer (the person paying / initiating).
+  userId       String
+  user         User            @relation("CardOrderBuyer", fields: [userId], references: [id], onDelete: Cascade)
+  // Who receives the entitlement. For premium/boost this equals userId; for a
+  // gift it's the recipient. Stored as a plain id (looked up manually).
+  targetUserId String
+  // Base price in tiyin (1 UZS = 100 tiyin), before the unique suffix.
+  baseTiyin    Int
+  // The unique last-two-digits (1..99) that distinguish this order.
+  uniqueCents  Int
+  // Exact amount to transfer, in tiyin: baseTiyin - (baseTiyin % 100) + uniqueCents.
+  // The CardXabar webhook matches on this exact integer.
+  amountTiyin  Int
+  // For kind=premium: how many days this order grants (one of the admin's
+  // configured premium plans). Null/omitted -> falls back to PREMIUM_DAYS.
+  days         Int?
+  status       CardOrderStatus @default(pending)
+  createdAt    DateTime        @default(now())
+  expiresAt    DateTime
+  paidAt       DateTime?
+  // Raw CardXabar text that matched this order (for auditing/debugging).
+  matchedRaw   String?
+
+  // Fast lookup of an incoming amount among still-open orders.
+  @@index([status, amountTiyin])
+  @@index([userId])
+}
+
+// App-wide settings, editable from the admin panel (single row, id=1).
+model Settings {
+  id              Int      @id @default(1)
+  // Telegram usernames (without @) users are forwarded to.
+  contactUsername String?
+  paymentUsername String?
+  // Premium price in Telegram Stars (XTR). Null → falls back to default.
+  // Kept for backward-compatibility (used as the fallback/default 30-day plan
+  // when `premiumPlans` below is empty).
+  premiumPriceStars Int?
+  // Up to 4 selectable Premium plans, e.g.
+  // [{ "days": 7, "priceStars": 100, "priceUzs": 8000 },
+  //  { "days": 30, "priceStars": 250, "priceUzs": 20000 }, ...]
+  // When set, users are offered a choice of period on the Premium sheet.
+  premiumPlans Json?
+  // Present/Boost price in Telegram Stars (XTR). Null → falls back to default.
+  presentPriceStars Int?
+  // Telegram username OR numeric id of the person notified when someone buys
+  // Premium with Stars (Stars are credited to the bot automatically).
+  starRecipient   String?
+
+  // ----- Automated card-to-card payments (CardXabar + userbot) -----
+  // Card number shown to the user to transfer to (free text, e.g. "8600 .... 1498").
+  // When set, the "Pay via card" buttons switch to the automated order flow.
+  cardNumber        String?
+  // Optional cardholder name shown alongside the number.
+  cardHolder        String?
+  // Premium price in so'm (UZS) for card payments. Null → DEFAULT_PREMIUM_UZS.
+  premiumPriceUzs   Int?
+  // Present/Boost price in so'm (UZS) for card payments. Null → DEFAULT_PRESENT_UZS.
+  presentPriceUzs   Int?
+  // Shared secret the CardXabar userbot presents (X-Payment-Secret header) to
+  // authenticate to the webhook. Null → the webhook rejects all requests.
+  cardWebhookSecret String?
+
+  updatedAt       DateTime @updatedAt
+}
+
+// Single-row config for the "autopilot" broadcast: an optional message sent
+// automatically once a day at a configured hour (Tashkent time). Uses the
+// same audience filters as a manual broadcast (stored as JSON).
+model AutoBroadcast {
+  id          Int      @id @default(1)
+  enabled     Boolean  @default(false)
+  // Hour of day (0-23) in Tashkent time (UTC+5) to send at.
+  hour        Int      @default(9)
+  messageUz   String?
+  messageRu   String?
+  // Public URL (R2) of an already-uploaded photo/video to attach — reused on
+  // every send, so nothing needs re-uploading each day.
+  mediaFileId String?
+  mediaType   String? // "photo" | "video"
+  // Serialized BroadcastFilters (see broadcast.service.ts), JSON.
+  filters     Json?
+  // Last date (YYYY-MM-DD, Tashkent) this autopilot actually fired, so the
+  // once-a-minute scheduler check never double-sends the same day.
+  lastRunDate String?
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,408 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tg-bg-color: #000000;
+  --tg-secondary-bg-color: #121214;
+  --tg-text-color: #ffffff;
+  --tg-hint-color: #8b8b93;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* Deep, mostly-uniform dark base so the middle matches the dark top/bottom;
+     the pink aurora only tints the corners. */
+  background: radial-gradient(ellipse at center, #0a0b12 0%, #050608 78%), var(--tg-bg-color);
+  color: var(--tg-text-color);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Kill the tap-highlight rectangle + focus outlines on every element. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+*:focus,
+*:focus-visible {
+  outline: none !important;
+}
+
+/* Range sliders — slim track + round pink thumb, consistent with the brand. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 9999px;
+  background: #ff2e9a;
+  box-shadow: 0 0 0 4px rgba(255, 46, 154, 0.25);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 9999px;
+  background: #ff2e9a;
+  box-shadow: 0 0 0 4px rgba(255, 46, 154, 0.25);
+}
+
+/* Animated pinkish gradient glows behind everything (top-left, top-right and
+   the two bottom corners), gently drifting/breathing. Sits deepest (z -3). */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(820px 460px at 0% 0%, rgba(255, 46, 154, 0.10), transparent 60%),
+    radial-gradient(820px 460px at 100% 0%, rgba(255, 46, 154, 0.08), transparent 60%),
+    radial-gradient(900px 560px at 100% 100%, rgba(255, 46, 154, 0.11), transparent 62%),
+    radial-gradient(900px 560px at 0% 100%, rgba(168, 85, 247, 0.08), transparent 62%);
+  animation: auroraShift 20s ease-in-out infinite alternate;
+}
+@keyframes auroraShift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, -3%, 0) scale(1.08);
+    opacity: 0.82;
+  }
+}
+
+/* Dark dome at the very top-center — keeps the logo on its own bg color so its
+   edges never clash with the gradient. */
+.logo-dome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(230px 100px at 50% 0%, #050608 60%, rgba(5, 6, 8, 0) 100%);
+}
+/* Mirrored dome at the bottom-center → the pink corners form an hourglass. */
+.logo-dome--bottom {
+  top: auto;
+  bottom: 0;
+  height: 150px;
+  background: radial-gradient(240px 120px at 50% 100%, #050608 62%, rgba(5, 6, 8, 0) 100%);
+}
+
+/* Parallax star background (3 depth layers scrolling at different speeds).
+   Generated as box-shadow dots by the StarBackground component. Sits above the
+   gradient (z -2) but below the logo dome and app content. */
+.star-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: transparent;
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+}
+.stars::after {
+  content: "";
+  position: absolute;
+  top: 2000px;
+  left: 0;
+  width: inherit;
+  height: inherit;
+  background: transparent;
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+}
+.stars.s1 {
+  width: 1px;
+  height: 1px;
+  animation: starScroll 60s linear infinite;
+}
+.stars.s2 {
+  width: 2px;
+  height: 2px;
+  animation: starScroll 100s linear infinite;
+  opacity: 0.85;
+}
+.stars.s3 {
+  width: 3px;
+  height: 3px;
+  animation: starScroll 150s linear infinite;
+  opacity: 0.7;
+}
+@keyframes starScroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2000px);
+  }
+}
+
+/* Gift button: shimmer sweep + periodic flip. */
+.gift-shine {
+  position: relative;
+  overflow: hidden;
+}
+.gift-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+  transform: translateX(-160%) skewX(-15deg);
+  animation: giftShine 3.5s ease-in-out infinite;
+}
+@keyframes giftShine {
+  0% {
+    transform: translateX(-160%) skewX(-15deg);
+  }
+  55%,
+  100% {
+    transform: translateX(280%) skewX(-15deg);
+  }
+}
+.gift-flip {
+  display: inline-flex;
+  animation: giftFlip 3.5s ease-in-out infinite;
+}
+@keyframes giftFlip {
+  0%,
+  65% {
+    transform: rotateY(0deg);
+  }
+  82% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+/* Galaxy starfall — occasional shooting stars streaking up-right (45°). */
+.starfall {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* Premium badge: golden gradient with a slow shimmer sweep + gentle pulse. */
+.premium-badge {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f6c14b 0%, #e8a11c 45%, #f9d976 100%);
+  color: #3a2600;
+  animation: premiumPulse 2.8s ease-in-out infinite;
+}
+.premium-badge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 55%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.85) 50%,
+    transparent 100%
+  );
+  transform: translateX(-180%) skewX(-18deg);
+  animation: premiumShine 3.2s ease-in-out infinite;
+}
+@keyframes premiumShine {
+  0% {
+    transform: translateX(-180%) skewX(-18deg);
+  }
+  50%,
+  100% {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+@keyframes premiumPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(246, 193, 75, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(246, 193, 75, 0.7);
+  }
+}
+
+/* Snappy taps everywhere — removes the 300ms mobile click delay and stops
+   long-press text selection / callouts on interactive elements. */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Swipe action buttons: a soft permanent glow + a gentle pulse every 4s. */
+@keyframes likeGlow {
+  0%,
+  100% {
+    box-shadow: 0 8px 22px rgba(255, 46, 154, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 26px 7px rgba(255, 46, 154, 0.65), 0 8px 22px rgba(255, 46, 154, 0.5);
+  }
+}
+@keyframes passGlow {
+  0%,
+  100% {
+    box-shadow: 0 8px 22px rgba(255, 255, 255, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 24px 6px rgba(255, 255, 255, 0.4), 0 8px 22px rgba(255, 255, 255, 0.2);
+  }
+}
+.glow-like {
+  animation: likeGlow 4s ease-in-out infinite;
+}
+.glow-pass {
+  animation: passGlow 4s ease-in-out infinite;
+}
+
+/* ---------- Loading screen logo animation ---------- */
+@keyframes logoPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.96;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+.animate-logoPulse {
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+/* Sleek indeterminate loading bar. */
+.loading-bar {
+  display: block;
+  height: 100%;
+  width: 45%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #ff2e9a, #a855f7);
+  animation: barSlide 1.2s ease-in-out infinite;
+}
+@keyframes barSlide {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.55);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.4);
+    opacity: 0;
+  }
+}
+.loading-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 230px;
+  width: 230px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 46, 154, 0.5);
+  transform: translate(-50%, -50%);
+  animation: ringPulse 2.6s ease-out infinite;
+}
+
+@keyframes dotBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+.loading-dot {
+  height: 10px;
+  width: 10px;
+  border-radius: 9999px;
+  background: #ff2e9a;
+  animation: dotBounce 1s ease-in-out infinite;
+}
+
+/* Hide scrollbars for a cleaner mini-app feel */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+}
