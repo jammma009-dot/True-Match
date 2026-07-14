@@ -48,7 +48,9 @@ export function PremiumModal({
   const plans = useStore(
     (s) => s.me?.settings?.premiumPlans ?? [{ days: 30, priceStars: priceStars ?? 250, priceUzs: 20000 }],
   );
-  const [selectedDays, setSelectedDays] = useState<number>(plans[0]?.days ?? 30);
+  const [selectedDays, setSelectedDays] = useState<number>(
+    plans.find((p) => p.days === 30)?.days ?? plans[0]?.days ?? 30,
+  );
   const selectedPlan = useMemo(
     () => plans.find((p) => p.days === selectedDays) ?? plans[0],
     [plans, selectedDays],
