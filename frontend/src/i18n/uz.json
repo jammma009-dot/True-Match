@@ -121,6 +121,8 @@
   "likes.locked": "Premium — kim yoqtirganini ko'ring",
   "likes.empty": "Hozircha sizni hech kim yoqtirmadi. Profilingizni to'ldiring!",
   "likes.comingSoon": "Sizni yoqtirganlar tez orada shu yerda ko'rinadi.",
+  "likes.pass": "O'chirish",
+  "likes.likeBack": "Yoqtirish bilan javob berish",
   "filter.title": "Filtr",
   "filter.age": "Yosh",
   "filter.city": "Shahar",
