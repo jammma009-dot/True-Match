@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MapPin, MessageCircle, Lock } from "lucide-react";
+import { Heart, MapPin, MessageCircle, Lock, X } from "lucide-react";
 import { api, MatchListItem } from "../lib/api";
 import { useStore, useT } from "../store/useStore";
 import { LogoHeader } from "../components/LogoHeader";
@@ -74,6 +74,21 @@ export function LikesScreen({
     }
   };
 
+  /** Dismisses a liker (records a "pass") — they disappear from this list for good. */
+  const passOnLiker = async (p: (typeof likes)[number]) => {
+    if (busy) return;
+    setBusy(p.userId);
+    haptics.impact("light");
+    try {
+      await api.swipe(p.userId, "pass");
+      queryClient.invalidateQueries({ queryKey: ["likes"] });
+    } catch {
+      haptics.notify("error");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onCardTap = (p: (typeof likes)[number], index: number) => {
     if (isUnlocked(index)) likeBack(p);
     else {
@@ -107,12 +122,9 @@ export function LikesScreen({
           {likes.map((p, index) => {
             const unlocked = isUnlocked(index);
             return (
-              <button
+              <div
                 key={p.userId}
-                type="button"
-                onClick={() => onCardTap(p, index)}
-                disabled={busy === p.userId}
-                className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[var(--tg-secondary-bg-color)] text-left active:opacity-90 disabled:opacity-60"
+                className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[var(--tg-secondary-bg-color)] text-left"
               >
                 {p.photos[0] ? (
                   <img
@@ -130,22 +142,44 @@ export function LikesScreen({
                   </div>
                 )}
 
-                {/* Center action / lock */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {unlocked ? (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/90 shadow-lg backdrop-blur">
+                {/* Center actions / lock */}
+                {unlocked ? (
+                  <div className="absolute inset-0 flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => passOnLiker(p)}
+                      disabled={busy === p.userId}
+                      aria-label={t("likes.pass")}
+                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur active:opacity-80 disabled:opacity-60"
+                    >
+                      <X className="h-5 w-5 text-white" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => likeBack(p)}
+                      disabled={busy === p.userId}
+                      aria-label={t("likes.likeBack")}
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/90 shadow-lg backdrop-blur active:opacity-80 disabled:opacity-60"
+                    >
                       {busy === p.userId ? (
                         <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       ) : (
                         <MessageCircle className="h-6 w-6 text-white" />
                       )}
-                    </div>
-                  ) : (
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onCardTap(p, index)}
+                    aria-label={t("likes.locked")}
+                    className="absolute inset-0 flex items-center justify-center active:opacity-90"
+                  >
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur">
                       <Lock className="h-5 w-5 text-white" />
                     </div>
-                  )}
-                </div>
+                  </button>
+                )}
 
                 {/* Info */}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
@@ -164,7 +198,7 @@ export function LikesScreen({
                     </p>
                   )}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
