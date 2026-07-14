@@ -142,33 +142,8 @@ export function LikesScreen({
                   </div>
                 )}
 
-                {/* Center actions / lock */}
-                {unlocked ? (
-                  <div className="absolute inset-0 flex items-center justify-center gap-8">
-                    <button
-                      type="button"
-                      onClick={() => passOnLiker(p)}
-                      disabled={busy === p.userId}
-                      aria-label={t("likes.pass")}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 backdrop-blur active:opacity-80 disabled:opacity-60"
-                    >
-                      <X className="h-3 w-3 text-white" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => likeBack(p)}
-                      disabled={busy === p.userId}
-                      aria-label={t("likes.likeBack")}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-brand/90 shadow-lg backdrop-blur active:opacity-80 disabled:opacity-60"
-                    >
-                      {busy === p.userId ? (
-                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      ) : (
-                        <MessageCircle className="h-3.5 w-3.5 text-white" />
-                      )}
-                    </button>
-                  </div>
-                ) : (
+                {/* Lock overlay (unlocked cards show actions in the bottom bar instead) */}
+                {!unlocked && (
                   <button
                     type="button"
                     onClick={() => onCardTap(p, index)}
@@ -182,18 +157,44 @@ export function LikesScreen({
                 )}
 
                 {/* Info */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/85 to-transparent p-3">
                   {unlocked ? (
                     <>
-                      <p className="text-sm font-bold text-white">
-                        {p.name}, {p.age}
-                      </p>
-                      <p className="flex items-center gap-1 text-xs text-white/75">
-                        <MapPin className="h-3 w-3" /> {t(`city.${p.city}`)}
-                      </p>
+                      <div>
+                        <p className="text-sm font-bold text-white">
+                          {p.name}, {p.age}
+                        </p>
+                        <p className="flex items-center gap-1 text-xs text-white/75">
+                          <MapPin className="h-3 w-3" /> {t(`city.${p.city}`)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-8">
+                        <button
+                          type="button"
+                          onClick={() => passOnLiker(p)}
+                          disabled={busy === p.userId}
+                          aria-label={t("likes.pass")}
+                          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 backdrop-blur active:opacity-80 disabled:opacity-60"
+                        >
+                          <X className="h-3 w-3 text-white" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => likeBack(p)}
+                          disabled={busy === p.userId}
+                          aria-label={t("likes.likeBack")}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-brand/90 shadow-lg backdrop-blur active:opacity-80 disabled:opacity-60"
+                        >
+                          {busy === p.userId ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          ) : (
+                            <MessageCircle className="h-3.5 w-3.5 text-white" />
+                          )}
+                        </button>
+                      </div>
                     </>
                   ) : (
-                    <p className="text-center text-[11px] font-semibold text-white/90">
+                    <p className="w-full text-center text-[11px] font-semibold text-white/90">
                       {t("likes.locked")}
                     </p>
                   )}
