@@ -1,0 +1,10 @@
+# Ignore the heavy local packages folder
+node_modules
+npm-debug.log
+
+# Ignore Git files (Docker doesn't need your version history)
+.git
+.gitignore
+
+# Ignore environment variables (keeps your local secrets safe)
+.env
