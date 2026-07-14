@@ -161,19 +161,27 @@ export function PremiumModal({
                         haptics.impact("light");
                         setSelectedDays(plan.days);
                       }}
-                      className={`rounded-2xl border px-2 py-3 text-center transition ${
+                      className={`flex flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-center transition ${
                         active
                           ? "border-amber-400 bg-amber-400/15"
                           : "border-white/10 bg-[var(--tg-bg-color)]"
                       }`}
                     >
+                      {/* Label — plan name / duration */}
                       <p
-                        className={`text-sm font-bold ${active ? "text-amber-300" : "text-tg"}`}
+                        className={`text-xs font-semibold leading-tight ${
+                          active ? "text-amber-300" : "text-tg"
+                        }`}
                       >
                         {plan.label ?? t("premium.planDays", { days: plan.days })}
                       </p>
-                      <p className="mt-0.5 flex items-center justify-center gap-0.5 text-xs text-tg-hint">
-                        {plan.priceStars} <Star className="h-3 w-3" fill="currentColor" />
+                      {/* UZS price — distinct, muted style */}
+                      <p className="text-[11px] font-medium leading-tight text-tg-hint">
+                        {plan.priceUzs.toLocaleString("en-US")} {t("card.som")}
+                      </p>
+                      {/* Stars price — distinct, accented style */}
+                      <p className="flex items-center justify-center gap-0.5 text-[11px] font-bold leading-tight text-amber-400">
+                        {plan.priceStars} <Star className="h-2.5 w-2.5" fill="currentColor" />
                       </p>
                     </button>
                   );
