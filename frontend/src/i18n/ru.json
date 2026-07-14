@@ -121,6 +121,8 @@
   "likes.locked": "Premium — узнайте, кто вас лайкнул",
   "likes.empty": "Пока вас никто не лайкнул. Заполните профиль!",
   "likes.comingSoon": "Те, кто вас лайкнул, скоро появятся здесь.",
+  "likes.pass": "Убрать",
+  "likes.likeBack": "Ответить лайком",
   "filter.title": "Фильтр",
   "filter.age": "Возраст",
   "filter.city": "Город",
