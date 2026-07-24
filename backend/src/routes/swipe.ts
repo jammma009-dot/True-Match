@@ -135,13 +135,16 @@ router.post(
       if (mutual || premium) {
         matchId = await createMatchAndCelebrate(user.id, targetUserId);
         matched = true;
-        // Bot notifications to both sides.
-        void notifyNewMatch(user.id);
-        void notifyNewMatch(targetUserId);
+        // Bot notifications to both sides. `user` and `target` are already
+        // loaded above, so pass them directly instead of re-querying by id —
+        // this is a hot path (every mutual like) and avoids extra
+        // connection-pool pressure under load.
+        void notifyNewMatch(user);
+        void notifyNewMatch(target);
       } else if (!reciprocal) {
         // Not a mutual like (and the target hasn't acted on me yet):
         // tell them someone liked their profile (identity kept private).
-        void notifyNewLike(targetUserId);
+        void notifyNewLike(target);
         emitToUser(targetUserId, "like:new", { at: new Date().toISOString() });
       }
     }
